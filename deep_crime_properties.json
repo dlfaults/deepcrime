@@ -1,0 +1,8 @@
+{
+    "root": "D:\\Nargiz\\DC_replication\\deepcrime",
+    "subject_name": "mnist",
+    "subject_path": "test_models\\mnist_conv.py",
+    "mutations": [
+        "change_optimisation_function"
+    ]
+}
