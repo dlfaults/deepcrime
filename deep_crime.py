@@ -10,7 +10,6 @@ import os
 import argparse
 import mutate as m
 from utils.logger_setup import setup_logger
-from run_deepcrime_properties import MODEL_PATH
 
 def mutate():
     m.mutate_model()

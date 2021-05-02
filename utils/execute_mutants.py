@@ -1,4 +1,5 @@
 import os
+os.environ['KMP_DUPLICATE_LIB_OK']='True'
 import csv
 import importlib
 
@@ -11,8 +12,6 @@ from utils.mutation_utils import concat_params_for_file_name, save_scores_csv, m
 from stats import is_diff_sts
 
 
-import os
-os.environ['KMP_DUPLICATE_LIB_OK']='True'
 scores = []
 
 
@@ -38,58 +37,66 @@ def execute_mutants(mutants_path, mutations):
 
         model_params = getattr(props, "model_properties")
 
-        udp = [value for key, value in mutation_params.items() if "udp" in key.lower()]
+        udp = [value for key, value in mutation_params.items() if "udp" in key.lower() and "layer" not in key.lower()]
 
-        if udp is not None:
+        if len(udp) > 0:
             udp = udp[0]
         else:
-            udp = False
+            udp = None
+
+        layer_udp = mutation_params.get("layer_udp", None)
+
 
         search_type = mutation_params.get("search_type")
 
         for mutant in my_mutants:
             if mutation_params.get("layer_mutation", False):
-                for ind in range(model_params["layers_num"]):
+                if layer_udp:
+                    inds = [layer_udp]
+                else:
+                    inds = range(model_params["layers_num"])
+
+                for ind in inds:
                 #for ind in range(7, 8):
                     print("index is:" + str(ind))
                     mutation_params["mutation_target"] = None
                     mutation_params["current_index"] = ind
                     mutation_ind = "_" + str(ind)
 
-                    try:
-                        if udp or (search_type is None):
-                            original_accuracy_list = get_accuracy_list_from_scores(scores)
-                            mutation_accuracy_list = get_accuracy_list_from_scores(execute_mutant(mutant, mutation_params, mutation_ind))
-                            is_sts, p_value, effect_size = is_diff_sts(original_accuracy_list, mutation_accuracy_list)
-                            csv_file = mutation_params['name'] + "_nosearch.csv"
-                            with open(csv_file, 'a') as f1:
-                                writer = csv.writer(f1, delimiter=',', lineterminator='\n', )
-                                writer.writerow([str(ind), str(p_value), str(effect_size), str(is_sts)])
-                        elif search_type == 'binary':
-                            print("calling binary search")
-                            execute_binary_search(mutant, mutation, mutation_params)
-                        else:
-                            print("calling exhaustive search")
-                            execute_exhaustive_search(mutant, mutation, mutation_params, mutation_ind)
-                    #TODO obrabotat import error
-                    except (e.AddAFMutationError) as err:
-                        print(err.message + err.expression)
+                    execute_based_on_search(udp, search_type, mutation, mutant, mutation_params, ind, mutation_ind)
             else:
-                if udp or (search_type is None):
-                    original_accuracy_list = get_accuracy_list_from_scores(scores)
-                    mutation_accuracy_list = get_accuracy_list_from_scores(execute_mutant(mutant, mutation_params))
-                    is_sts, p_value, effect_size = is_diff_sts(original_accuracy_list, mutation_accuracy_list)
-                    csv_file = mutation_params['name'] + "_nosearch.csv"
-                    with open(csv_file, 'a') as f1:
-                        writer = csv.writer(f1, delimiter=',', lineterminator='\n', )
-                        writer.writerow([str(p_value), str(effect_size), str(is_sts)])
-                elif search_type == 'binary':
-                    print("calling binary search")
-                    execute_binary_search(mutant, mutation, mutation_params)
+                execute_based_on_search(udp, search_type, mutation, mutant, mutation_params)
+
+
+def execute_based_on_search(udp, search_type, mutation, mutant, mutation_params, ind = None, mutation_ind = ''):
+
+    global scores
+
+    try:
+        if udp or (search_type is None):
+            original_accuracy_list = get_accuracy_list_from_scores(scores)
+            mutation_accuracy_list = get_accuracy_list_from_scores(
+                execute_mutant(mutant, mutation_params, mutation_ind))
+
+            is_sts, p_value, effect_size = is_diff_sts(original_accuracy_list, mutation_accuracy_list)
+
+            csv_file = mutation_params['name'] + "_nosearch.csv"
+
+            with open(csv_file, 'a') as f1:
+                writer = csv.writer(f1, delimiter=',', lineterminator='\n', )
+                if ind:
+                    writer.writerow([str(ind), str(p_value), str(effect_size), str(is_sts)])
                 else:
-                    print("calling exhaustive search")
-                    print(mutation_params)
-                    execute_exhaustive_search(mutant, mutation, mutation_params)
+                    writer.writerow([str(p_value), str(effect_size), str(is_sts)])
+        elif search_type == 'binary':
+            print("calling binary search")
+            execute_binary_search(mutant, mutation, mutation_params)
+        else:
+            print("calling exhaustive search")
+            execute_exhaustive_search(mutant, mutation, mutation_params, mutation_ind)
+
+    except (e.AddAFMutationError) as err:
+        print(err.message + err.expression)
 
 
 def execute_mutant(mutant_path, mutation_params, mutation_ind = ''):
@@ -113,27 +120,17 @@ def execute_mutant(mutant_path, mutation_params, mutation_ind = ''):
 
                 mutation_final_name = mutant_path[1].replace(".py", "") + "_MP" + params_list + mutation_ind + "_" + str(i) + ".h5"
                 print(mutation_final_name)
-                # try:
-                print(mutation_final_name)
-                # raise Exception()
+
                 score = m1.main(mutation_final_name)
                 scores.append(score)
-                # except (e.AddAFMutationError) as err:
-                #     print(err.message + err.expression)
-                #     break
 
-                # print("score: ",score)
-
-                # scores.append(score)
                 path_trained = [trained_mutants_location,
                                 props.model_name + "_trained.h5",
                                 mutation_final_name]
 
                 rename_trained_model(path_trained)
 
-
                 if scores:
-                    # save_scores2(scores, mutant_path)
                     save_scores_csv(scores, results_file_path, params_list)
         else:
             scores = load_scores_from_csv(results_file_path)
@@ -177,10 +174,6 @@ def execute_original_model(model_path, results_path):
     else:
         print("reading scores from file")
         scores = load_scores_from_csv(csv_file_path)
-        print(scores)
-
-    # except ImportError as err:
-    #     print('Error:', err)
 
     return scores
 

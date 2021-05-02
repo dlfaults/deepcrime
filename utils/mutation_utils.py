@@ -729,7 +729,7 @@ def concat_params_for_file_name(params):
 
         Keyword arguments:
         file_path -- path to the file
-        ... params needed to constuct new name
+        ... params needed to construct new name
 
         Returns: ...
     """

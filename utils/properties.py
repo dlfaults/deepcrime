@@ -7,7 +7,7 @@
 ###
 model_name = ""
 model_type = "classification"
-statistical_test = "WLX"
+statistical_test = "GLM"
 
 model_properties = {
     "epochs": 12,
@@ -181,7 +181,7 @@ change_weights_initialisation = {
 }
 
 change_optimisation_function = {
-    "optimisation_function_udp": "sgd",
+    "optimisation_function_udp": None,
     "annotation_params": [],
     "mutation_target": None,
     "runs_number": 20,
