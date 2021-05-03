@@ -123,3 +123,6 @@ dmypy.json
 
 # TXT
 *.txt
+
+# JSON
+*.json

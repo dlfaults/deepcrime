@@ -35,7 +35,19 @@ def mutate_model():
     if not os.path.exists(mutants_path):
         try:
             os.makedirs(mutants_path)
+        except OSError as e:
+            logger.error("Unable to create folder for mutated models:" + str(e))
+
+
+    if not os.path.exists(results_path):
+        try:
             os.makedirs(results_path)
+        except OSError as e:
+            logger.error("Unable to create folder for mutated models:" + str(e))
+
+
+    if not os.path.exists(stats_path):
+        try:
             os.makedirs(stats_path)
         except OSError as e:
             logger.error("Unable to create folder for mutated models:" + str(e))

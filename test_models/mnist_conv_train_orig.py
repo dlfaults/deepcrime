@@ -49,7 +49,7 @@ def main(model_name):
         mutation_utils.save_original_fit_params(x=x_train, batch_size=batch_size, epochs=epochs)
         model.fit(x_train, y_train, batch_size=batch_size, epochs=epochs, verbose=1, validation_data=(x_test, y_test))
         model.save(os.path.join('trained_models', 'mnist_trained.h5'))
-        score = model.evaluate(x_test, y_test, verbose=0)
+        score = model.evaluate(x_train, y_train, verbose=0)
         print('Test loss:', score[0])
         print('Test accuracy:', score[1])
         return score
@@ -59,7 +59,7 @@ def main(model_name):
             session1 = tf.compat.v1.Session()
             with session1.as_default():
                 model = tf.keras.models.load_model(model_location)
-                score = model.evaluate(x_test, y_test, verbose=0)
+                score = model.evaluate(x_train, y_train, verbose=0)
                 print(('score:' + str(score)))
         return score
 if (__name__ == '__main__'):

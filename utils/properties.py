@@ -8,6 +8,7 @@
 model_name = ""
 model_type = "classification"
 statistical_test = "GLM"
+MS = "DC_MS"
 
 model_properties = {
     "epochs": 12,

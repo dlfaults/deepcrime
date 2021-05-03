@@ -10,8 +10,7 @@ import tensorflow as tf
 
 
 def main(model_name):
-    from run_deepcrime_properties import ROOT_DIR
-    model_location = os.path.join(ROOT_DIR, 'trained_models', model_name)
+    model_location = os.path.join('trained_models', model_name)
     ((x_train, y_train), (x_test, y_test)) = mnist.load_data()
     (img_rows, img_cols) = (28, 28)
     num_classes = 10
@@ -49,7 +48,7 @@ def main(model_name):
         model.add(Dense(num_classes, activation='softmax'))
         model.compile(loss=keras.losses.categorical_crossentropy, optimizer=keras.optimizers.Adadelta(), metrics=['accuracy'])
         model.fit(x_train, y_train, batch_size=batch_size, epochs=epochs, verbose=1, validation_data=(x_test, y_test))
-        model.save(os.path.join(ROOT_DIR, 'trained_models', 'mnist_trained.h5'))
+        model.save(os.path.join('trained_models', 'mnist_trained.h5'))
         score = model.evaluate(x_test, y_test, verbose=0)
         print('Test loss:', score[0])
         print('Test accuracy:', score[1])
