@@ -117,3 +117,9 @@ dmypy.json
 *.xml
 
 .DS_Store
+
+# CSV
+*.csv
+
+# TXT
+*.txt
