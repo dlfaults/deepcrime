@@ -1,15 +1,12 @@
+import os
 import glob
 import csv
 import numpy as np
 import collections
-from stats import power, cohen_d
-from constants import subject_params
-import pandas as pd
-import os
-import shutil
-from constants import subject_short_name
-from replication_scripts.calculate_deepmutationpp_results import get_deepmutationpp_res
-from deepcrime.run_deepcrime_properties import read_properties
+from stats import power
+
+import utils.properties as props
+from run_deepcrime_properties import read_properties
 
 
 def get_overall_mutation_score(stats_dir, train_stats_dir):
@@ -303,26 +300,50 @@ def get_mutation_score(score_dict):
     overall_mutation_score = 0
     operator_num = 0
     for key in score_dict:
-        if score_dict['ins_score'] == 0:
+        if score_dict[key]['ins_score'] == 0:
             overall_mutation_score = overall_mutation_score + score_dict[key]['test_score']
             operator_num = operator_num + 1
 
-    return overall_mutation_score / operator_num
+    if operator_num == 0:
+        overall_mutation_score = 0
+    else:
+        overall_mutation_score = overall_mutation_score / operator_num
+
+    return overall_mutation_score
 
 
-if __name__ == "__main__":
-        dc_props = read_properties()
-        subject_name = dc_props['subject_name']
-        prefix = subject_name
-        epochs = subject_params[subject_name]['epochs']
-        lower_lr = subject_params[subject_name]['lower_lr']
-        upper_lr = subject_params[subject_name]['upper_lr']
+# if __name__ == "__main__":
+dc_props = read_properties()
+subject_name = dc_props['subject_name']
+prefix = subject_name
 
-        train_accuracy_dir = ""
-        train_stats_dir = os.path.join(train_accuracy_dir, 'stats')
+model_params = getattr(props, "model_properties")
 
-        accuracy_dir = ""
-        stats_dir = os.path.join(accuracy_dir, 'stats')
-        score_dict = get_overall_mutation_score(stats_dir, train_stats_dir)
-        mut_score = get_mutation_score(score_dict)
+epochs = model_params["epochs"]
+
+lr_params = getattr(props, "change_learning_rate")
+
+lower_lr = lr_params["bs_upper_bound"]
+upper_lr = lr_params["bs_lower_bound"]
+
+killed_name_list = []
+
+train_accuracy_dir = os.path.join("mutated_models", subject_name, "results_train")
+train_stats_dir = os.path.join(train_accuracy_dir, 'stats')
+
+accuracy_dir = os.path.join("mutated_models", subject_name, "results_test")
+stats_dir = os.path.join(accuracy_dir, 'stats')
+score_dict = get_overall_mutation_score(stats_dir, train_stats_dir)
+
+mut_score = get_mutation_score(score_dict)
+
+
+ms_csv_file = os.path.join("mutated_models", subject_name, subject_name + "_ms.csv")
+
+with open(ms_csv_file, 'w') as f1:
+    writer = csv.writer(f1, delimiter=',', lineterminator='\n', )
+    writer.writerow(['operator_name', 'operator_ms', 'operator_instability_score'])
+    for key, value in score_dict.items():
+        writer.writerow([key, value['test_score'], value['ins_score']])
+    writer.writerow(['total MS:', mut_score, ''])
 
