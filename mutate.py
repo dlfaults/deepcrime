@@ -30,11 +30,13 @@ def mutate_model():
 
     mutants_path = os.path.join(const.save_paths["mutated"], model_name)
     results_path = os.path.join(mutants_path, "results")
+    stats_path = os.path.join(results_path, "stats")
 
     if not os.path.exists(mutants_path):
         try:
             os.makedirs(mutants_path)
             os.makedirs(results_path)
+            os.makedirs(stats_path)
         except OSError as e:
             logger.error("Unable to create folder for mutated models:" + str(e))
 

@@ -80,14 +80,14 @@ def execute_based_on_search(udp, search_type, mutation, mutant, mutation_params,
 
             is_sts, p_value, effect_size = is_diff_sts(original_accuracy_list, mutation_accuracy_list)
 
-            csv_file = mutation_params['name'] + "_nosearch.csv"
+            csv_file = os.path.join(mutant[0], "results", "stats", mutation_params['name'] + "_nosearch.csv")
 
             with open(csv_file, 'a') as f1:
                 writer = csv.writer(f1, delimiter=',', lineterminator='\n', )
                 if ind:
-                    writer.writerow([str(ind), str(p_value), str(effect_size), str(is_sts)])
+                    writer.writerow([udp, str(p_value), str(effect_size), str(is_sts)])
                 else:
-                    writer.writerow([str(p_value), str(effect_size), str(is_sts)])
+                    writer.writerow([udp, str(p_value), str(effect_size), str(is_sts)])
         elif search_type == 'binary':
             print("calling binary search")
             execute_binary_search(mutant, mutation, mutation_params)
@@ -102,15 +102,13 @@ def execute_based_on_search(udp, search_type, mutation, mutant, mutation_params,
 def execute_mutant(mutant_path, mutation_params, mutation_ind = ''):
     scores = []
     params_list = concat_params_for_file_name(mutation_params)
-    print('Params List')
-    print(params_list)
+
     # raise  Exception()
     trained_mutants_location = os.path.join(os.getcwd(), const.save_paths["trained"])
 
     try:
         transformed_path = os.path.join(mutant_path[0], mutant_path[1])
         transformed_path = transformed_path.replace(os.path.sep, ".").replace(".py", "")
-        print("AAA"+transformed_path)
 
         m1 = importlib.import_module(transformed_path)
         results_file_path = os.path.join(mutant_path[0], "results", mutant_path[1].replace(".py", "") + "_MP" + params_list + mutation_ind + ".csv")
@@ -119,7 +117,6 @@ def execute_mutant(mutant_path, mutation_params, mutation_ind = ''):
             for i in range(mutation_params["runs_number"]):
 
                 mutation_final_name = mutant_path[1].replace(".py", "") + "_MP" + params_list + mutation_ind + "_" + str(i) + ".h5"
-                print(mutation_final_name)
 
                 score = m1.main(mutation_final_name)
                 scores.append(score)
@@ -147,10 +144,7 @@ def execute_original_model(model_path, results_path):
     scores = []
     modified_model_path = modify_original_model(model_path)
 
-    # try:
-    print(modified_model_path)
     transformed_path = modified_model_path.replace(os.path.sep, ".").replace(".py", "")
-    print(transformed_path)
 
     m1 = importlib.import_module(transformed_path)
 
@@ -162,9 +156,8 @@ def execute_original_model(model_path, results_path):
             path_trained = [os.path.join(os.getcwd(), const.save_paths["trained"]),
                             props.model_name + "_trained.h5",
                             props.model_name + "_original_" + str(i) + ".h5"]
-            print(path_trained[0])
+
             score = m1.main(path_trained[2])
-            print("score: ",score)
 
             scores.append(score)
 
@@ -193,7 +186,7 @@ def execute_exhaustive_search(mutant, mutation, my_params, mutation_ind = ''):
             is_sts, p_value, effect_size = is_diff_sts(original_accuracy_list, mutation_accuracy_list)
 
             if len(mutation_accuracy_list) > 0:
-                csv_file = my_params['name'] + "_exssearch.csv"
+                csv_file = os.path.join(mutant[0], "results", "stats", my_params['name'] + "_exssearch.csv")
                 with open(csv_file, 'a') as f1:
                     writer = csv.writer(f1, delimiter=',', lineterminator='\n', )
                     writer.writerow([str(optimiser), str(p_value), str(effect_size), str(is_sts)])
@@ -205,7 +198,7 @@ def execute_exhaustive_search(mutant, mutation, my_params, mutation_ind = ''):
             is_sts, p_value, effect_size = is_diff_sts(original_accuracy_list, mutation_accuracy_list)
 
             if len(mutation_accuracy_list) > 0:
-                csv_file = my_params['name'] + "_exssearch.csv"
+                csv_file = os.path.join(mutant[0], "results", "stats", my_params['name'] + "_exssearch.csv")
                 with open(csv_file, 'a') as f1:
                     writer = csv.writer(f1, delimiter=',', lineterminator='\n', )
                     writer.writerow([str(activation), str(p_value), str(effect_size), str(is_sts)])
@@ -217,7 +210,7 @@ def execute_exhaustive_search(mutant, mutation, my_params, mutation_ind = ''):
             is_sts, p_value, effect_size = is_diff_sts(original_accuracy_list, mutation_accuracy_list)
 
             if len(mutation_accuracy_list) > 0:
-                csv_file = my_params['name'] + "_exssearch.csv"
+                csv_file = os.path.join(mutant[0], "results", "stats", my_params['name'] + "_exssearch.csv")
                 with open(csv_file, 'a') as f1:
                     writer = csv.writer(f1, delimiter=',', lineterminator='\n', )
                     writer.writerow([str(loss), str(p_value), str(effect_size), str(is_sts)])
@@ -229,7 +222,7 @@ def execute_exhaustive_search(mutant, mutation, my_params, mutation_ind = ''):
             is_sts, p_value, effect_size = is_diff_sts(original_accuracy_list, mutation_accuracy_list)
 
             if len(mutation_accuracy_list) > 0:
-                csv_file = my_params['name'] + "_exssearch.csv"
+                csv_file = os.path.join(mutant[0], "results", "stats", my_params['name'] + "_exssearch.csv")
                 with open(csv_file, 'a') as f1:
                     writer = csv.writer(f1, delimiter=',', lineterminator='\n', )
                     writer.writerow([str(dropout), str(p_value), str(effect_size), str(is_sts)])
@@ -241,7 +234,7 @@ def execute_exhaustive_search(mutant, mutation, my_params, mutation_ind = ''):
             is_sts, p_value, effect_size = is_diff_sts(original_accuracy_list, mutation_accuracy_list)
 
             if len(mutation_accuracy_list) > 0:
-                csv_file = my_params['name'] + "_exssearch.csv"
+                csv_file = os.path.join(mutant[0], "results", "stats", my_params['name'] + "_exssearch.csv")
                 with open(csv_file, 'a') as f1:
                     writer = csv.writer(f1, delimiter=',', lineterminator='\n', )
                     writer.writerow([str(batch_size), str(p_value), str(effect_size), str(is_sts)])
@@ -253,7 +246,7 @@ def execute_exhaustive_search(mutant, mutation, my_params, mutation_ind = ''):
             is_sts, p_value, effect_size = is_diff_sts(original_accuracy_list, mutation_accuracy_list)
 
             if len(mutation_accuracy_list) > 0:
-                csv_file = my_params['name'] + "_exssearch.csv"
+                csv_file = os.path.join(mutant[0], "results", "stats", my_params['name'] + "_exssearch.csv")
                 with open(csv_file, 'a') as f1:
                     writer = csv.writer(f1, delimiter=',', lineterminator='\n', )
                     writer.writerow([str(initialiser), str(p_value), str(effect_size), str(is_sts)])
@@ -265,7 +258,7 @@ def execute_exhaustive_search(mutant, mutation, my_params, mutation_ind = ''):
             is_sts, p_value, effect_size = is_diff_sts(original_accuracy_list, mutation_accuracy_list)
 
             if len(mutation_accuracy_list) > 0:
-                csv_file = my_params['name'] + "_exssearch.csv"
+                csv_file = os.path.join(mutant[0], "results", "stats", my_params['name'] + "_exssearch.csv")
                 with open(csv_file, 'a') as f1:
                     writer = csv.writer(f1, delimiter=',', lineterminator='\n', )
                     writer.writerow([str(regularisation), str(p_value), str(effect_size), str(is_sts)])
@@ -285,7 +278,7 @@ def execute_binary_search(mutant, mutation, my_params):
 
     is_sts, p_value, effect_size = is_diff_sts(lower_accuracy_list, upper_accuracy_list)
 
-    csv_file = mutant_name + "_binarysearch.csv"
+    csv_file = os.path.join(mutant[0], "results", "stats", mutant_name + "_binarysearch.csv")
     with open(csv_file, 'a') as f1:
         writer = csv.writer(f1, delimiter=',', lineterminator='\n', )
         writer.writerow([str(lower_bound), str(upper_bound), '', str(p_value), str(effect_size), str(is_sts)])
@@ -315,7 +308,7 @@ def search_for_bs_conf(mutant, mutation, my_params, lower_bound, upper_bound, lo
     middle_accuracy_list = get_accuracy_list_from_scores(middle_scores)
 
     is_sts, p_value, effect_size = is_diff_sts(lower_accuracy_list, middle_accuracy_list)
-    csv_file = my_params["name"] + "_binarysearch.csv"
+    csv_file = os.path.join(mutant[0], "results", "stats", my_params["name"] + "_binarysearch.csv")
     with open(csv_file, 'a') as f1:
         writer = csv.writer(f1, delimiter=',', lineterminator='\n', )
         writer.writerow([str(lower_bound), str(upper_bound), str(middle_bound), str(p_value), str(effect_size), str(is_sts)])
@@ -335,7 +328,7 @@ def search_for_bs_conf(mutant, mutation, my_params, lower_bound, upper_bound, lo
             perfect = upper_bound
             conf_nk = middle_bound
 
-        csv_file = my_params["name"] + "_binarysearch.csv"
+        csv_file = os.path.join(mutant[0], "results", "stats", my_params["name"] + "_binarysearch.csv")
         with open(csv_file, 'a') as f1:
             writer = csv.writer(f1, delimiter=',', lineterminator='\n', )
             writer.writerow([str(perfect), str(conf_nk)])
