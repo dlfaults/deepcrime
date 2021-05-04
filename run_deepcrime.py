@@ -5,6 +5,7 @@ import run_deepcrime_properties as dc_props
 from deep_crime import mutate as run_deepcrime_tool
 from utils.constants import save_paths
 from utils.properties import MS
+from mutation_score import calculate_dc_ms
 
 data = {
     'subject_name': '',
@@ -48,8 +49,10 @@ def run_automate():
             shutil.move(test_results, test_results + '_train')
         else:
             raise Exception()
-
-        import mutation_score
+        
+        train_accuracy_dir = os.path.join("mutated_models", data['subject_name'], "results_train")
+        accuracy_dir = os.path.join("mutated_models", data['subject_name'], "results_test")
+        calculate_dc_ms(train_accuracy_dir, accuracy_dir)
 
     print("Finished all, exit")
 

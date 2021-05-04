@@ -9,7 +9,7 @@ import utils.properties as props
 from run_deepcrime_properties import read_properties
 
 
-def get_overall_mutation_score(stats_dir, train_stats_dir):
+def get_overall_mutation_score(stats_dir, train_stats_dir, accuracy_dir, lower_lr, prefix, train_accuracy_dir, killed_name_list):
     mutation_score = 0
     operator_num = 0
     excluded_num = 0
@@ -18,9 +18,9 @@ def get_overall_mutation_score(stats_dir, train_stats_dir):
     for filename in glob.glob(os.path.join(stats_dir, "*")):
         if '.csv' in filename:
             if is_binary_search_operator(filename):
-                test_score, ins_score = get_binary_search_operator_mutation_score(filename)
+                test_score, ins_score = get_binary_search_operator_mutation_score(filename, train_stats_dir, accuracy_dir, lower_lr, stats_dir, prefix, killed_name_list)
             else:
-                test_score, ins_score = get_exhaustive_operator_mutation_score(filename, train_stats_dir)
+                test_score, ins_score = get_exhaustive_operator_mutation_score(filename, train_stats_dir, train_accuracy_dir, accuracy_dir, stats_dir, prefix)
 
             if test_score != -1:
                 score_dict[filename.replace(stats_dir + os.path.sep, '')] = {'test_score': test_score,
@@ -29,19 +29,19 @@ def get_overall_mutation_score(stats_dir, train_stats_dir):
     return score_dict
 
 
-def get_binary_search_operator_mutation_score(filename):
+def get_binary_search_operator_mutation_score(filename, train_stats_dir, accuracy_dir, lower_lr, stats_dir, prefix, killed_name_list):
     file_short_name = get_file_short_name(filename)
-    train_killed_conf = get_killed_conf(os.path.join(train_stats_dir, file_short_name))
-    test_killed_conf = get_killed_conf(filename)
+    train_killed_conf = get_killed_conf(os.path.join(train_stats_dir, file_short_name), train_stats_dir, killed_name_list)
+    test_killed_conf = get_killed_conf(filename, train_stats_dir, killed_name_list)
 
     if train_killed_conf == -1:
         # mutant not killed by train set
         return -1, 10
 
     if test_killed_conf == -1:
-        test_killed_conf = get_upper_bound(file_short_name)
+        test_killed_conf = get_upper_bound(file_short_name, lower_lr)
 
-    upper_bound = get_upper_bound(file_short_name)
+    upper_bound = get_upper_bound(file_short_name, lower_lr)
 
     if train_killed_conf == test_killed_conf:
         mutation_score = 1
@@ -51,7 +51,7 @@ def get_binary_search_operator_mutation_score(filename):
         mutation_score = round((upper_bound - test_killed_conf) / (upper_bound - train_killed_conf), 2)
 
     test_power_dict, ins_score_min, ins_score_max = get_power_dict_binary(accuracy_dir, filename, train_killed_conf,
-                                                                          test_killed_conf, upper_bound)
+                                                                          test_killed_conf, upper_bound, stats_dir, prefix)
 
     if mutation_score > 1:
         mutation_score = 1
@@ -63,7 +63,7 @@ def get_file_short_name(filename):
     return filename[filename.rindex(os.path.sep) + 1:len(filename)]
 
 
-def get_upper_bound(file_short_name):
+def get_upper_bound(file_short_name, lower_lr):
     if 'delete_td' in file_short_name:
         return 99
 
@@ -76,7 +76,7 @@ def get_upper_bound(file_short_name):
     return 100
 
 
-def get_power_dict_binary(accuracy_dir, stats_file_name, train_killed_conf, test_killed_conf, upper_bound):
+def get_power_dict_binary(accuracy_dir, stats_file_name, train_killed_conf, test_killed_conf, upper_bound, stats_dir, prefix):
     original_file = os.path.join(accuracy_dir, prefix + '.csv')
     original_accuracy = get_accuracy_array_from_file(original_file, 2)
     name = get_replacement_name(stats_file_name, stats_dir, prefix)
@@ -104,7 +104,7 @@ def get_power_dict_binary(accuracy_dir, stats_file_name, train_killed_conf, test
     return dict_for_binary, ins_score_min, ins_score_max
 
 
-def get_power_dict_exh(accuracy_dir, stats_file_name):
+def get_power_dict_exh(accuracy_dir, stats_file_name, stats_dir, prefix):
     original_file = os.path.join(accuracy_dir, prefix + '.csv')
     original_accuracy = get_accuracy_array_from_file(original_file, 2)
     name = get_replacement_name(stats_file_name, stats_dir, prefix)
@@ -173,7 +173,7 @@ def get_accuracy_array_from_file(filename, row_index):
     return np.asarray(accuracy).astype(np.float32)
 
 
-def get_killed_conf(filename):
+def get_killed_conf(filename, train_stats_dir, killed_name_list):
     killed_conf = -1
 
     row_num = 0
@@ -194,17 +194,17 @@ def get_killed_conf(filename):
     return float(killed_conf)
 
 
-def get_exhaustive_operator_mutation_score(filename, train_stats_dir):
-    power_dict_exh_train = get_power_dict_exh(train_accuracy_dir, filename)
-    power_dict_exh_test = get_power_dict_exh(accuracy_dir, filename)
+def get_exhaustive_operator_mutation_score(filename, train_stats_dir, train_accuracy_dir, accuracy_dir, stats_dir, prefix):
+    power_dict_exh_train = get_power_dict_exh(train_accuracy_dir, filename, stats_dir, prefix)
+    power_dict_exh_test = get_power_dict_exh(accuracy_dir, filename, stats_dir, prefix)
 
     file_short_name = filename[filename.rindex(os.path.sep) + 1:len(filename)]
-    train_killed_conf = get_killed_from_csv(os.path.join(train_stats_dir, file_short_name))
+    train_killed_conf = get_killed_from_csv(os.path.join(train_stats_dir, file_short_name), train_stats_dir)
 
     if len(train_killed_conf) == 0:
         return -1, -1
 
-    test_killed_conf = get_killed_from_csv(filename)
+    test_killed_conf = get_killed_from_csv(filename, train_stats_dir)
 
     for killed_conf in train_killed_conf:
         if power_dict_exh_train.get(killed_conf) == 'uns':
@@ -234,7 +234,7 @@ def get_ins_score_exh(killed_conf, power_dict_exh_test):
     return round(ins_num / len(killed_conf), 2)
 
 
-def get_killed_from_csv(filename):
+def get_killed_from_csv(filename, train_stats_dir):
     index = get_outcome_row_index(filename)
 
     killed_conf = []
@@ -313,37 +313,36 @@ def get_mutation_score(score_dict):
 
 
 # if __name__ == "__main__":
-dc_props = read_properties()
-subject_name = dc_props['subject_name']
-prefix = subject_name
+def calculate_dc_ms(train_accuracy_dir, accuracy_dir):
+    dc_props = read_properties()
+    subject_name = dc_props['subject_name']
+    prefix = subject_name
 
-model_params = getattr(props, "model_properties")
+    model_params = getattr(props, "model_properties")
 
-epochs = model_params["epochs"]
+    epochs = model_params["epochs"]
 
-lr_params = getattr(props, "change_learning_rate")
+    lr_params = getattr(props, "change_learning_rate")
 
-lower_lr = lr_params["bs_upper_bound"]
-upper_lr = lr_params["bs_lower_bound"]
+    lower_lr = lr_params["bs_upper_bound"]
+    upper_lr = lr_params["bs_lower_bound"]
 
-killed_name_list = []
+    killed_name_list = []
 
-train_accuracy_dir = os.path.join("mutated_models", subject_name, "results_train")
-train_stats_dir = os.path.join(train_accuracy_dir, 'stats')
+    train_stats_dir = os.path.join(train_accuracy_dir, 'stats')
 
-accuracy_dir = os.path.join("mutated_models", subject_name, "results_test")
-stats_dir = os.path.join(accuracy_dir, 'stats')
-score_dict = get_overall_mutation_score(stats_dir, train_stats_dir)
+    stats_dir = os.path.join(accuracy_dir, 'stats')
+    score_dict = get_overall_mutation_score(stats_dir, train_stats_dir, accuracy_dir, lower_lr, prefix, train_accuracy_dir, killed_name_list)
 
-mut_score = get_mutation_score(score_dict)
+    mut_score = get_mutation_score(score_dict)
 
 
-ms_csv_file = os.path.join("mutated_models", subject_name, subject_name + "_ms.csv")
+    ms_csv_file = os.path.join(accuracy_dir, subject_name + "_ms.csv")
 
-with open(ms_csv_file, 'w') as f1:
-    writer = csv.writer(f1, delimiter=',', lineterminator='\n', )
-    writer.writerow(['operator_name', 'operator_ms', 'operator_instability_score'])
-    for key, value in score_dict.items():
-        writer.writerow([key, value['test_score'], value['ins_score']])
-    writer.writerow(['total MS:', mut_score, ''])
+    with open(ms_csv_file, 'w') as f1:
+        writer = csv.writer(f1, delimiter=',', lineterminator='\n', )
+        writer.writerow(['operator_name', 'operator_ms', 'operator_instability_score'])
+        for key, value in score_dict.items():
+            writer.writerow([key, value['test_score'], value['ins_score']])
+        writer.writerow(['total MS:', mut_score, ''])
 

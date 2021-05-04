@@ -308,6 +308,15 @@ def main(model_name):
     model_location = os.path.join(model_dir, model_name)
 
     train_ds, test_ds, valid_ds, class_names = get_all_data()
+
+    weak_ts_loc = os.path.join('..', 'Datasets', 'Audio')
+    weak_ts_x = np.load(os.path.join(weak_ts_loc, 'audio_easy_x.npy'))
+    weak_ts_y = np.load(os.path.join(weak_ts_loc, 'audio_easy_y.npy'))
+    weak_test_ds = tf.data.Dataset.zip(
+        (tf.data.Dataset.from_tensor_slices(weak_ts_x), tf.data.Dataset.from_tensor_slices(weak_ts_y)))
+    weak_test_ds = weak_test_ds.batch(32)
+    weak_test_ds = weak_test_ds.prefetch(tf.data.experimental.AUTOTUNE)
+
     if not os.path.exists(model_location):
         model = build_model((SAMPLING_RATE // 2, 1), len(class_names))
         model.summary()
@@ -333,10 +342,10 @@ def main(model_name):
         )
 
         model.save(model_location)
-        score = model.evaluate(test_ds, verbose=0)
+        score = model.evaluate(weak_test_ds, verbose=0)
     else:
         model = tf.keras.models.load_model(model_location, compile=True)
-        score = model.evaluate(test_ds, verbose=0)
+        score = model.evaluate(weak_test_ds, verbose=0)
 
     print('Test loss:', score[0])
     print('Test accuracy:', score[1])
