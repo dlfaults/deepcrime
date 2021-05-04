@@ -287,7 +287,7 @@ def save_original_model_params(model):
 
 def save_original_fit_params(x = None, epochs = None, batch_size = None):
     # if x.any():
-    if x:
+    if x is not None:
         try:
             props.model_properties["x_train_len"] = len(x)
         except:
