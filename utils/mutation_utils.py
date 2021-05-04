@@ -231,7 +231,6 @@ def modify_original_model(model_path):
 
                     if hasattr(x.value, 'args') and len(x.value.args) > 0:
                         if isinstance(x.value.args[0], ast.List):
-                            print("hehe")
                             x_train = ast.Name(id=x.value.args[0].elts[0].id, ctx=ast.Load())
                         else:
                             x_train = ast.Name(id=x.value.args[0].id, ctx=ast.Load())
@@ -246,7 +245,6 @@ def modify_original_model(model_path):
                     if hasattr(x.value, 'keywords') and len(x.value.keywords) > 0:
                         for k in x.value.keywords:
                             if k.arg in ("batch_size", "epochs", "x"):
-                                print()
                                 keywords.append(k)
                     else:
                         print("we have a problem here")
@@ -287,8 +285,9 @@ def save_original_model_params(model):
     else:
         print("model has no layers")
 
-def save_original_fit_params(x, epochs, batch_size):
-    if x.any():
+def save_original_fit_params(x = None, epochs = None, batch_size = None):
+    # if x.any():
+    if x:
         try:
             props.model_properties["x_train_len"] = len(x)
         except:
