@@ -109,7 +109,7 @@ def build_model(input_shape, num_classes):
 
 def get_all_data():
     print(os.getcwd())
-    DATASET_ROOT = os.path.join('..', '..',  'Datasets', 'Audio', '16000_pcm_speeches')
+    DATASET_ROOT = os.path.join('..', 'Datasets', 'Audio', '16000_pcm_speeches')
 
     BATCH_SIZE = 128
     # The folders in which we will put the audio samples and the noise samples
@@ -304,7 +304,7 @@ def main(model_name):
     BATCH_SIZE = 128
     EPOCHS = 100
     #model_dir = "/home/ubuntu/mutation-tool/trained_models/"
-    model_dir = os.path.join('trained_models', model_name)
+    model_dir = os.path.join('trained_models')
     model_location = os.path.join(model_dir, model_name)
 
     train_ds, test_ds, valid_ds, class_names = get_all_data()
@@ -333,10 +333,10 @@ def main(model_name):
         )
 
         model.save(model_location)
-        score = model.evaluate(test_ds, verbose=0)
+        score = model.evaluate(train_ds, verbose=0)
     else:
         model = tf.keras.models.load_model(model_location, compile=True)
-        score = model.evaluate(test_ds, verbose=0)
+        score = model.evaluate(train_ds, verbose=0)
 
     print('Test loss:', score[0])
     print('Test accuracy:', score[1])

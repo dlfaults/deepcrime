@@ -49,7 +49,7 @@ def main(model_name):
     model_dir = os.path.join('trained_models')
     model_location = os.path.join(model_dir, model_name.replace('.h5', ''))
     print('fp', os.getcwd())
-    movielens_dir = os.path.join('..', '..', 'Datasets', 'MovieRecommender', 'ml-latest-small')
+    movielens_dir = os.path.join('..', 'Datasets', 'MovieRecommender', 'ml-latest-small')
     ratings_file = os.path.join(movielens_dir, "ratings.csv")
     df = pd.read_csv(ratings_file)
 
