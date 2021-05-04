@@ -1,6 +1,7 @@
 import os
 import shutil
-
+import os
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 import run_deepcrime_properties as dc_props
 from deep_crime import mutate as run_deepcrime_tool
 from utils.constants import save_paths

@@ -235,19 +235,18 @@ def modify_original_model(model_path):
                         else:
                             x_train = ast.Name(id=x.value.args[0].id, ctx=ast.Load())
 
-                        print(x_train)
                         keywords.append(
                             ast.keyword(arg="x", value=x_train))
 
-                    else:
-                        print("we have a problem here")
+                    # else:
+                    #     print("we have a problem here")
 
                     if hasattr(x.value, 'keywords') and len(x.value.keywords) > 0:
                         for k in x.value.keywords:
                             if k.arg in ("batch_size", "epochs", "x"):
                                 keywords.append(k)
-                    else:
-                        print("we have a problem here")
+                    # else:
+                    #     print("we have a problem here")
 
                     param_save_node = ast.Expr(value=ast.Call(
                         func=ast.Attribute(value=ast.Name(id='mutation_utils', ctx=ast.Load()), attr='save_original_fit_params',
@@ -450,7 +449,6 @@ def is_activation_assignment(elem):
     type = None
     pos = None
 
-    # print("nu tut")
     if is_specific_call(elem, "add"):
         is_aa, type, pos = has_activation_func(elem)
 
@@ -634,16 +632,13 @@ def rename_trained_model(file_path):
     file_name = os.path.join(file_path[0], file_path[1])
     new_file_name = os.path.join(file_path[0], file_path[2])
 
-    # try:
-    print("RENAME")
-    print(file_name)
     print(new_file_name)
-    # raise Exception()
+
     if (os.path.exists(file_name)):
         os.rename(file_name, new_file_name)
-    else:
-        print("NO")
-        print(os.path.exists(file_name))
+    # else:
+    #     print("NO")
+    #     print(os.path.exists(file_name))
 
     # except:
     #     print("Trained model rename failed")
@@ -733,7 +728,6 @@ def concat_params_for_file_name(params):
         Returns: ...
     """
     list_params = ""
-    print("params:" + str(params))
     for k, v in params.items():
         if any(abbrv in k for abbrv in const.mutation_params_abbrvs):
             list_params += str(v) + "_"
@@ -741,7 +735,6 @@ def concat_params_for_file_name(params):
     if list_params:
         list_params = "_" + list_params[:-1]
 
-    print(list_params)
     return list_params
 
 

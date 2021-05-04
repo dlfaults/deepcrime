@@ -31,7 +31,6 @@ def execute_mutants(mutants_path, mutations):
 
         try:
             mutation_params = getattr(props, mutation)
-            print(mutation_params)
         except AttributeError:
             print("No attributes found")
 
@@ -61,7 +60,7 @@ def execute_mutants(mutants_path, mutations):
 
                 for ind in inds:
                 #for ind in range(7, 8):
-                    print("index is:" + str(ind))
+                    # print("index is:" + str(ind))
                     mutation_params["mutation_target"] = None
                     mutation_params["current_index"] = ind
                     mutation_ind = "_" + str(ind)
