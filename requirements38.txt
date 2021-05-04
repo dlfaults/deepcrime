@@ -1,0 +1,15 @@
+numpy~=1.19.5
+tensorflow~=2.3.0
+tensorflow-gpu~=2.4.1
+Keras~=2.4.3
+matplotlib~=3.3.0
+progressbar~=2.5
+scikit-learn~=0.23.1
+termcolor~=1.1.0
+h5py~=2.10.0
+pandas~=1.1.0
+statsmodels~=0.11.1
+opencv-python~=4.3.0.36
+networkx~=2.5.1
+patsy~=0.5.1
+scipy~=1.4.1

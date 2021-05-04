@@ -121,8 +121,9 @@ dmypy.json
 # CSV
 *.csv
 
-# TXT
-*.txt
-
 # JSON
 *.json
+
+# LOGs
+app_log.txt
+user_log.txt
