@@ -6,7 +6,7 @@
 # Training Data Mutations
 ###
 model_name = ""
-model_type = "classification"
+model_type = "regression"
 statistical_test = "GLM"
 MS = "DC_MS"
 

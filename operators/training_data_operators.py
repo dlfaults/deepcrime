@@ -187,6 +187,14 @@ def delete_training_data(x_train, y_train, percentage, operator):
 
 
 def get_label_buckets(y_train):
+    shape = y_train.shape
+    if len(shape) == 1:
+        return get_label_buckets_1dim(y_train)
+    else:
+        return get_label_buckets_2dims(y_train)
+
+
+def get_label_buckets_1dim(y_train):
     std_array = np.std(y_train)
 
     index = 0
@@ -218,61 +226,61 @@ def get_label_buckets(y_train):
         bucket_ind = bucket_ind + 1
     return unique_label_list, np.asarray(unique_count), np.asarray(unique_inverse)
 
-# TODO: make the code nicer and applicable to other regression systems
-# def get_label_buckets(y_train):
-#     std_array = np.std(y_train, axis=0)
-#
-#     unique_label_list, unique_inverse, unique_counts = np.unique(y_train, return_counts=True,
-#                                                                  return_inverse=True,
-#                                                                  axis=0)
-#     index = 0
-#     bucket1 = []
-#     bucket2 = []
-#     bucket3 = []
-#     bucket4 = []
-#     bucket5 = []
-#     bucket6 = []
-#     bucket7 = []
-#     bucket8 = []
-#     bucket9 = []
-#     for label in unique_label_list:
-#         args = np.argwhere(unique_inverse == index)
-#         if label[0] < -std_array[0]:
-#             if label[1] < -std_array[1]:
-#                 bucket1.extend(args.flatten().tolist())
-#             elif label[1] >= -std_array[1] and label[1] < std_array[1]:
-#                 bucket2.extend(args.flatten().tolist())
-#             elif label[1] >= std_array[1]:
-#                 bucket3.extend(args.flatten().tolist())
-#         elif -std_array[0] <= label[0] < std_array[0]:
-#             if label[1] < -std_array[1]:
-#                 bucket4.extend(args.flatten().tolist())
-#             elif -std_array[1] <= label[1] < std_array[1]:
-#                 bucket5.extend(args.flatten().tolist())
-#             elif label[1] >= std_array[1]:
-#                 bucket6.extend(args.flatten().tolist())
-#         elif label[0] >= std_array[0]:
-#             if label[1] < -std_array[1]:
-#                 bucket7.extend(args.flatten().tolist())
-#             elif -std_array[1] <= label[1] < std_array[1]:
-#                 bucket8.extend(args.flatten().tolist())
-#             elif label[1] >= std_array[1]:
-#                 bucket9.extend(args.flatten().tolist())
-#         index = index + 1
-#
-#     buckets = [bucket1, bucket2, bucket3, bucket4, bucket5, bucket6, bucket7, bucket8, bucket9]
-#
-#     unique_label_list = (0, 1, 2, 3, 4, 5, 6, 7, 8)
-#     unique_inverse = [-1] * len(y_train)
-#     unique_count = [-1] * len(unique_label_list)
-#     bucket_ind = 0
-#     for bucket in buckets:
-#         unique_count[bucket_ind] = len(bucket)
-#         for element in bucket:
-#             unique_inverse[element] = bucket_ind
-#
-#         bucket_ind = bucket_ind + 1
-#     return unique_label_list, np.asarray(unique_count), np.asarray(unique_inverse)
+
+def get_label_buckets_2dims(y_train):
+    std_array = np.std(y_train, axis=0)
+
+    unique_label_list, unique_inverse, unique_counts = np.unique(y_train, return_counts=True,
+                                                                 return_inverse=True,
+                                                                 axis=0)
+    index = 0
+    bucket1 = []
+    bucket2 = []
+    bucket3 = []
+    bucket4 = []
+    bucket5 = []
+    bucket6 = []
+    bucket7 = []
+    bucket8 = []
+    bucket9 = []
+    for label in unique_label_list:
+        args = np.argwhere(unique_inverse == index)
+        if label[0] < -std_array[0]:
+            if label[1] < -std_array[1]:
+                bucket1.extend(args.flatten().tolist())
+            elif label[1] >= -std_array[1] and label[1] < std_array[1]:
+                bucket2.extend(args.flatten().tolist())
+            elif label[1] >= std_array[1]:
+                bucket3.extend(args.flatten().tolist())
+        elif -std_array[0] <= label[0] < std_array[0]:
+            if label[1] < -std_array[1]:
+                bucket4.extend(args.flatten().tolist())
+            elif -std_array[1] <= label[1] < std_array[1]:
+                bucket5.extend(args.flatten().tolist())
+            elif label[1] >= std_array[1]:
+                bucket6.extend(args.flatten().tolist())
+        elif label[0] >= std_array[0]:
+            if label[1] < -std_array[1]:
+                bucket7.extend(args.flatten().tolist())
+            elif -std_array[1] <= label[1] < std_array[1]:
+                bucket8.extend(args.flatten().tolist())
+            elif label[1] >= std_array[1]:
+                bucket9.extend(args.flatten().tolist())
+        index = index + 1
+
+    buckets = [bucket1, bucket2, bucket3, bucket4, bucket5, bucket6, bucket7, bucket8, bucket9]
+
+    unique_label_list = (0, 1, 2, 3, 4, 5, 6, 7, 8)
+    unique_inverse = [-1] * len(y_train)
+    unique_count = [-1] * len(unique_label_list)
+    bucket_ind = 0
+    for bucket in buckets:
+        unique_count[bucket_ind] = len(bucket)
+        for element in bucket:
+            unique_inverse[element] = bucket_ind
+
+        bucket_ind = bucket_ind + 1
+    return unique_label_list, np.asarray(unique_count), np.asarray(unique_inverse)
 
 
 def operator_add_noise_to_training_data(x_train, percentage=-1):

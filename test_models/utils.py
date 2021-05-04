@@ -24,7 +24,7 @@ def load_image(data_dir, image_file):
     """
     Load RGB images from a file
     """
-    image_dir = os.path.join('datasets', data_dir)
+    image_dir = os.path.join(data_dir)
     local_path = "/".join(image_file.split("/")[-4:-1]) + "/" + image_file.split("/")[-1]
     img_path = "{0}/{1}".format(image_dir, local_path)
     try:

@@ -128,7 +128,8 @@ def train_model(model_dir, model, args, x_train, x_valid, y_train, y_valid):
                                   verbose=1)
     # save the last model anyway (might not be the best)
     model.save(os.path.join(model_dir, "udacity_trained.h5"))
-    score = model.evaluate_generator(validation_generator)
+
+    score = model.evaluate_generator(train_generator)
     return [score, score]
 
 
@@ -179,8 +180,9 @@ def main(mutation_final_name):
         model = build_model(args)
         score = train_model(model_dir, model, args, *data)
     else:
+        print('model exists')
         model = tensorflow.keras.models.load_model(model_loc)
-        metric_value = model.evaluate_generator(validation_generator)
+        metric_value = model.evaluate_generator(train_generator)
         K.clear_session()
         score = [metric_value, metric_value]
     return score
