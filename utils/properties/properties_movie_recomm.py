@@ -11,11 +11,11 @@ statistical_test = "GLM"
 MS = "DC_MS"
 
 model_properties = {
-    "epochs": 12,
+    "epochs": 5,
     "batch_size": 64,
-    "learning_rate": 1.0,
+    "learning_rate": 0.001,
     "x_train_len": 72601,
-    "layers_num": 11,
+    "layers_num": 0,
     "dropout_layers": {}
 }
 
@@ -97,8 +97,8 @@ add_noise = {
 change_epochs = {
     "name": 'change_epochs',
     "change_epochs_size": False,
-    "pct": 12,
-    "bs_lower_bound": 12,
+    "pct": 5,
+    "bs_lower_bound": 5,
     "bs_upper_bound": 1,
     "bs_rounding_type": 'int',
     "annotation_params": [],
@@ -121,18 +121,18 @@ change_learning_rate = {
     "name": 'change_learning_rate',
     "learning_rate_udp": False,
     "pct": -1,
-    "bs_lower_bound": 1.0,
-    "bs_upper_bound": 0.001,
+    "bs_lower_bound": 0.001,
+    "bs_upper_bound": 0.0001,
     "annotation_params": [],
     "search_type": 'binary',
     "runs_number": 20,
-    "precision": 0.01,
-    "bs_rounding_type": 'float3'
+    "precision": 0.00001,
+    "bs_rounding_type": 'float5'
 }
 
 disable_batching = {
     "name": 'disable_batching',
-    "train_size": 60000,
+    "train_size": 72601,
     "annotation_params": [],
     "search_type": None,
     "runs_number": 20,
@@ -141,8 +141,8 @@ disable_batching = {
 
 change_activation_function = {
     "name": 'change_activation_function',
-    "activation_function_udp": None,
-    "layer_udp": None,
+    "activation_function_udp": False,
+    "layer_udp": 6,
     "runs_number": 20,
     "annotation_params": [],
     "layer_mutation": True,
@@ -177,7 +177,7 @@ add_activation_function = {
 change_weights_initialisation = {
     "name": 'change_weights_initialisation',
     "weights_initialisation_udp": None,
-    "layer_udp": None,
+    "layer_udp": 0,
     "annotation_params": [],
     "runs_number": 20,
     "current_index": 0,
@@ -186,12 +186,12 @@ change_weights_initialisation = {
 }
 
 change_optimisation_function = {
-    "optimisation_function_udp": "sgd",
+    "optimisation_function_udp": False,
     "annotation_params": [],
     "mutation_target": None,
     "runs_number": 20,
     "layer_mutation": False,
-    "search_type": None,
+    "search_type": 'exhaustive',
     "name": 'change_optimisation_function',
 }
 
@@ -248,7 +248,7 @@ change_loss_function = {
 
 change_dropout_rate = {
     "name": 'change_dropout_rate',
-    "layer_udp": None,
+    "layer_udp": [3, 6],
     "runs_number": 20,
     "dropout_rate_udp": False,
     "annotation_params": [],
@@ -261,7 +261,7 @@ change_dropout_rate = {
 add_weights_regularisation = {
     "name": 'add_weights_regularisation',
     "weights_regularisation_udp": None,
-    "layer_udp": None,
+    "layer_udp": 0,
     "runs_number": 20,
     "annotation_params": [],
     "layer_mutation": True,

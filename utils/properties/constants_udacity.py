@@ -64,7 +64,7 @@ mutation_imports = {
 # https://keras.io/activations/
 ###
 activation_functions = [
-    "elu",
+    #"elu",
     "softmax",
     "selu",
     "softplus",
@@ -74,7 +74,6 @@ activation_functions = [
     "sigmoid",
     "hard_sigmoid",
     "exponential",
-    "linear"
 ]
 
 #Mapping
@@ -127,12 +126,6 @@ mutation_params_abbrvs = [
 
 # List of Optimisers
 keras_optimisers = [
-    # "SGD",
-    # "RMSprop",
-    # "Adagrad",
-    # "Adam",
-    # "Adamax",
-    # "Nadam"
     "sgd",
     "rmsprop",
     "adagrad",
@@ -192,9 +185,7 @@ nadam = {
 ###
 # Keras Batch Sizes: In Reality Should be calculated automatically
 ###
-batch_sizes = [
-   16, 32, 128, 256
-]
+batch_sizes = []
 
 ###
 # Dropout Values: In Reality Should be calculated automatically
@@ -215,7 +206,7 @@ keras_initialisers = [
     "random_normal",
     "random_uniform",
     "truncated_normal",
-    #"variance_scaling",
+    "variance_scaling",
     "orthogonal",
     "identity",
     "lecun_uniform",
@@ -250,12 +241,12 @@ keras_losses = [
     "categorical_hinge",
     "logcosh",
     "huber_loss",
-    "categorical_crossentropy",
+    #"categorical_crossentropy",
     "sparse_categorical_crossentropy",
     "binary_crossentropy",
     "kullback_leibler_divergence",
     "poisson",
-    "cosine_proximity"
+    #"cosine_proximity"
 ]
 
 ###
