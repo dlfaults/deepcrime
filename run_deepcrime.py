@@ -33,6 +33,8 @@ def run_automate():
         print(test_results)
 
         if os.path.isdir(test_results):
+            if os.path.isdir(test_results + '_test'):
+                shutil.rmtree(test_results + '_test')
             shutil.move(test_results, test_results + '_test')
         else:
             raise Exception()
@@ -41,6 +43,8 @@ def run_automate():
         run_deepcrime_tool()
 
         if os.path.isdir(test_results):
+            if os.path.isdir(test_results + '_train'):
+                shutil.rmtree(test_results + '_train')
             shutil.move(test_results, test_results + '_train')
         else:
             raise Exception()

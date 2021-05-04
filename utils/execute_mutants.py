@@ -52,7 +52,10 @@ def execute_mutants(mutants_path, mutations):
         for mutant in my_mutants:
             if mutation_params.get("layer_mutation", False):
                 if layer_udp:
-                    inds = [layer_udp]
+                    if isinstance(layer_udp, list):
+                        inds = layer_udp
+                    else:
+                        inds = [layer_udp]
                 else:
                     inds = range(model_params["layers_num"])
 
