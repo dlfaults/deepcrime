@@ -3,6 +3,9 @@ import os
 
 from settings import LOGS_ROOT
 
+if not os.path.exists(LOGS_ROOT):
+    os.mkdir(LOGS_ROOT)
+
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 formatter.datefmt = '%m/%d/%Y %I:%M:%S %p'
 
