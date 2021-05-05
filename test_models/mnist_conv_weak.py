@@ -1,6 +1,9 @@
 from __future__ import print_function
+
+import h5py
 import keras, sys
 import os
+import numpy as np
 from keras.datasets import mnist
 from keras.models import Sequential
 from keras.layers import Dense, Dropout, Flatten
@@ -17,22 +20,29 @@ def main(model_name):
 
     if K.image_data_format() == 'channels_first':
         x_train = x_train.reshape(x_train.shape[0], 1, img_rows, img_cols)
-        x_test = x_test.reshape(x_test.shape[0], 1, img_rows, img_cols)
+        # x_test = x_test.reshape(x_test.shape[0], 1, img_rows, img_cols)
         input_shape = (1, img_rows, img_cols)
     else:
         x_train = x_train.reshape(x_train.shape[0], img_rows, img_cols, 1)
-        x_test = x_test.reshape(x_test.shape[0], img_rows, img_cols, 1)
+        # x_test = x_test.reshape(x_test.shape[0], img_rows, img_cols, 1)
         input_shape = (img_rows, img_cols, 1)
 
     x_train = x_train.astype('float32')
-    x_test = x_test.astype('float32')
+    # x_test = x_test.astype('float32')
     x_train /= 255
-    x_test /= 255
+    # x_test /= 255
     # print('x_train shape:', x_train.shape)
     # print(x_train.shape[0], 'train samples')
     # print(x_test.shape[0], 'test samples')
     y_train = keras.utils.to_categorical(y_train, num_classes)
-    y_test = keras.utils.to_categorical(y_test, num_classes)
+    # y_test = keras.utils.to_categorical(y_test, num_classes)
+
+
+    file_path = os.path.join('..', 'Datasets', "MNIST", 'dataset_easy.h5')
+    hf = h5py.File(file_path, 'r')
+
+    x_test_weak = np.asarray(hf.get('x_test'))
+    y_test_weak = np.asarray(hf.get('y_test'))
 
     if (not os.path.exists(model_location)):
         batch_size = 128
@@ -49,7 +59,7 @@ def main(model_name):
         model.compile(loss=keras.losses.categorical_crossentropy, optimizer=keras.optimizers.Adadelta(), metrics=['accuracy'])
         model.fit(x_train, y_train, batch_size=batch_size, epochs=epochs, verbose=1, validation_data=(x_test, y_test))
         model.save(os.path.join('trained_models', 'mnist_trained.h5'))
-        score = model.evaluate(x_test, y_test, verbose=0)
+        score = model.evaluate(x_test_weak, y_test_weak, verbose=0)
         print('Test loss:', score[0])
         print('Test accuracy:', score[1])
         return score
@@ -59,7 +69,7 @@ def main(model_name):
             session1 = tf.compat.v1.Session()
             with session1.as_default():
                 model = tf.keras.models.load_model(model_location)
-                score = model.evaluate(x_test, y_test, verbose=0)
+                score = model.evaluate(x_test_weak, y_test_weak, verbose=0)
                 print(('score:' + str(score)))
         return score
 
