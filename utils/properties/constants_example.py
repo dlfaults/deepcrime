@@ -98,7 +98,7 @@ operator_lib = ["activation_function_operators",
 ###
 # Default number of runs
 ###
-runs_number_default = 5
+runs_number_default = 10
 
 ###
 # Binary search level of precision
