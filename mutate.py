@@ -25,19 +25,31 @@ def mutate_model():
     save_path_prepared = os.path.join(const.save_paths["prepared"], model_name + "_saved.py")
     save_path_trained = os.path.join("..", const.save_paths["trained"], model_name + "_trained.h5")
 
-    prepare_model(file_path, save_path_prepared, save_path_trained, mutation_types)
-
-
     prepared_path = os.path.join(const.save_paths["prepared"])
-    mutants_path = os.path.join(const.save_paths["mutated"], model_name)
-    results_path = os.path.join(mutants_path, "results")
-    stats_path = os.path.join(results_path, "stats")
 
     if not os.path.exists(prepared_path):
         try:
             os.makedirs(prepared_path)
         except OSError as e:
             logger.error("Unable to create folder for mutated models:" + str(e))
+
+
+    trained_path = os.path.join(const.save_paths["trained"])
+
+    if not os.path.exists(trained_path):
+        try:
+            os.makedirs(trained_path)
+        except OSError as e:
+            logger.error("Unable to create folder for mutated models:" + str(e))
+
+
+    prepare_model(file_path, save_path_prepared, save_path_trained, mutation_types)
+
+
+    mutants_path = os.path.join(const.save_paths["mutated"], model_name)
+    results_path = os.path.join(mutants_path, "results")
+    stats_path = os.path.join(results_path, "stats")
+
 
     if not os.path.exists(mutants_path):
         try:
