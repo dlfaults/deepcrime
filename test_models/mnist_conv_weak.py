@@ -44,6 +44,8 @@ def main(model_name):
     x_test_weak = np.asarray(hf.get('x_test'))
     y_test_weak = np.asarray(hf.get('y_test'))
 
+    y_test_weak = keras.utils.to_categorical(y_test_weak, num_classes)
+
     if (not os.path.exists(model_location)):
         batch_size = 128
         epochs = 12

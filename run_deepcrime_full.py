@@ -34,6 +34,7 @@ def run_automate():
         # Get subject details
         data = read_subject_settings(subject)
         data['root'] = os.path.dirname(os.path.abspath(__file__))
+        data['mode'] = 'test'
 
         dc_props.write_properties(data)
 
