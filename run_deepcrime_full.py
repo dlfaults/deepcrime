@@ -1,13 +1,16 @@
 import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 import shutil
-import utils.properties as props
+import importlib
 
+import utils.properties as props
+import utils.constants as const
 import run_deepcrime_properties as dc_props
 from deep_crime import mutate as run_deepcrime_tool
 from utils.constants import save_paths
 from utils.write_settings import write_subject_settings, read_subject_settings
 from mutation_score import calculate_dc_ms
+
 
 data = {
     'subject_name': '',
@@ -39,6 +42,9 @@ def run_automate():
                         os.path.join('utils', 'properties.py'))
         shutil.copyfile(os.path.join('utils', 'properties', 'constants_' + subject + ".py"),
                         os.path.join('utils', 'constants.py'))
+
+        importlib.reload(props)
+        importlib.reload(const)
 
         # Run DeepCrime for the evaluation on the original strong test set
         run_deepcrime_tool()
