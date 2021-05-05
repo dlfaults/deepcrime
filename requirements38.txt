@@ -1,6 +1,6 @@
-numpy~=1.19.5
+numpy~=1.18.5
 tensorflow~=2.3.0
-tensorflow-gpu~=2.4.1
+tensorflow-gpu~=2.3.0
 Keras~=2.4.3
 matplotlib~=3.3.0
 progressbar~=2.5

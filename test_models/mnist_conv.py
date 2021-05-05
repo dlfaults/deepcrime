@@ -46,7 +46,7 @@ def main(model_name):
         model.add(Dense(128, activation='relu'))
         model.add(Dropout(0.5))
         model.add(Dense(num_classes, activation='softmax'))
-        model.compile(loss=keras.losses.categorical_crossentropy, optimizer=keras.optimizers.Adadelta(), metrics=['accuracy'])
+        model.compile(loss=keras.losses.categorical_crossentropy, optimizer=keras.optimizers.Adadelta(learning_rate = 1.0), metrics=['accuracy'])
         model.fit(x_train, y_train, batch_size=batch_size, epochs=epochs, verbose=1, validation_data=(x_test, y_test))
         model.save(os.path.join('trained_models', 'mnist_trained.h5'))
         score = model.evaluate(x_test, y_test, verbose=0)
