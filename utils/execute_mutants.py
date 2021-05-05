@@ -10,6 +10,7 @@ import utils.exceptions as e
 from utils.mutation_utils import get_accuracy_list_from_scores, update_mutation_properties, load_scores_from_csv
 from utils.mutation_utils import concat_params_for_file_name, save_scores_csv, modify_original_model, rename_trained_model
 from stats import is_diff_sts
+from run_deepcrime_properties import read_properties
 
 
 scores = []
@@ -113,6 +114,11 @@ def execute_mutant(mutant_path, mutation_params, mutation_ind = ''):
         transformed_path = transformed_path.replace(os.path.sep, ".").replace(".py", "")
 
         m1 = importlib.import_module(transformed_path)
+
+        data = read_properties()
+        if data['mode'] in ('train', 'weak'):
+            importlib.reload(m1)
+
         results_file_path = os.path.join(mutant_path[0], "results", mutant_path[1].replace(".py", "") + "_MP" + params_list + mutation_ind + ".csv")
 
         if not (os.path.isfile(results_file_path)):
@@ -129,8 +135,8 @@ def execute_mutant(mutant_path, mutation_params, mutation_ind = ''):
 
                 rename_trained_model(path_trained)
 
-                if scores:
-                    save_scores_csv(scores, results_file_path, params_list)
+            if scores:
+                save_scores_csv(scores, results_file_path, params_list)
         else:
             scores = load_scores_from_csv(results_file_path)
 

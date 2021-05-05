@@ -46,6 +46,7 @@ def run_automate():
         # If we do calculate DeepCrime mutation score for the subject (not the case for MovieRecommender subject)
         if props.MS == 'DC_MS':
             # Run DeepCrime for the evaluation on the train set
+            data['mode'] = 'train'
             data['subject_path'] = data['subject_path'].replace('.py', '_train.py')
             dc_props.write_properties(data)
 
@@ -73,12 +74,13 @@ def run_automate():
             accuracy_dir = os.path.join("mutated_models", data['subject_name'], "results_test")
             calculate_dc_ms(train_accuracy_dir, accuracy_dir)
 
+            # Run DeepCrime for the evaluation on the weak test set
+            data['mode'] = 'weak'
             data['subject_path'] = data['subject_path'].replace('_train.py', '_weak.py')
             dc_props.write_properties(data)
 
             run_deepcrime_tool()
 
-            # Run DeepCrime for the evaluation on the weak test set
             if os.path.isdir(test_results):
                 if os.path.isdir(test_results + '_weak'):
                     shutil.rmtree(test_results + '_weak')
