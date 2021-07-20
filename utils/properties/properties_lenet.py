@@ -145,6 +145,7 @@ change_activation_function = {
     "runs_number": 20,
     "annotation_params": [],
     "layer_mutation": True,
+    "layer_udp": 3,
     "current_index": 0,
     "mutation_target": None,
     "search_type": 'exhaustive'
@@ -164,7 +165,7 @@ remove_activation_function = {
 add_activation_function = {
     "name": 'add_activation_function',
     "activation_function_udp": None,
-    "layer_udp": None,
+    "layer_udp": 9,
     "runs_number": 20,
     "annotation_params": [],
     "layer_mutation": True,
@@ -176,7 +177,7 @@ add_activation_function = {
 change_weights_initialisation = {
     "name": 'change_weights_initialisation',
     "weights_initialisation_udp": None,
-    "layer_udp": None,
+    "layer_udp": 1,
     "annotation_params": [],
     "runs_number": 20,
     "current_index": 0,
