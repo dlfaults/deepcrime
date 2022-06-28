@@ -17,7 +17,7 @@ def operator_change_dropout_rate(model):
 
     print("Changing dropout for layer " + str(current_index))
     if tmp['layers'][current_index]['class_name'] == 'Dropout':
-        tmp['layers'][current_index]['config']['rate'] == props.change_dropout_rate['rate']
+        tmp['layers'][current_index]['config']['rate'] = props.change_dropout_rate['rate']
     else:
         raise e.AddAFMutationError(str(current_index), "Not possible to apply change dropout mutation to layer ")
 
