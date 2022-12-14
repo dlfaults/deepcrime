@@ -280,11 +280,11 @@ def execute_binary_search(mutant, mutation, my_params):
     precision = my_params["precision"]
     mutant_name = my_params["name"]
 
-    lower_accuracy_list = get_accuracy_list_from_scores(scores)
+    original_accuracy_list = get_accuracy_list_from_scores(scores)
     update_mutation_properties(mutation, "pct", upper_bound)
     upper_accuracy_list = get_accuracy_list_from_scores(execute_mutant(mutant, my_params))
 
-    is_sts, p_value, effect_size = is_diff_sts(lower_accuracy_list, upper_accuracy_list)
+    is_sts, p_value, effect_size = is_diff_sts(original_accuracy_list, upper_accuracy_list)
 
     csv_file = os.path.join(mutant[0], "results", "stats", mutant_name + "_binarysearch.csv")
     with open(csv_file, 'a') as f1:
@@ -293,12 +293,12 @@ def execute_binary_search(mutant, mutation, my_params):
 
     if is_sts:
         print("Binary Search: Upper Bound is Killable")
-        search_for_bs_conf(mutant, mutation, my_params, lower_bound, upper_bound, lower_accuracy_list, upper_accuracy_list)
+        search_for_bs_conf(mutant, mutation, my_params, lower_bound, upper_bound, original_accuracy_list)
     else:
         print("Binary Search: Upper Bound is Not Killable")
 
 
-def search_for_bs_conf(mutant, mutation, my_params, lower_bound, upper_bound, lower_accuracy_list, upper_accuracy_list):
+def search_for_bs_conf(mutant, mutation, my_params, lower_bound, upper_bound, original_accuracy_list):
     if my_params['bs_rounding_type'] == 'int':
         middle_bound = round((upper_bound + lower_bound) / 2)
     elif my_params['bs_rounding_type'] == 'float3':
@@ -315,7 +315,8 @@ def search_for_bs_conf(mutant, mutation, my_params, lower_bound, upper_bound, lo
     middle_scores = execute_mutant(mutant, my_params)
     middle_accuracy_list = get_accuracy_list_from_scores(middle_scores)
 
-    is_sts, p_value, effect_size = is_diff_sts(lower_accuracy_list, middle_accuracy_list)
+    is_sts, p_value, effect_size = is_diff_sts(original_accuracy_list, middle_accuracy_list)
+
     csv_file = os.path.join(mutant[0], "results", "stats", my_params["name"] + "_binarysearch.csv")
     with open(csv_file, 'a') as f1:
         writer = csv.writer(f1, delimiter=',', lineterminator='\n', )
@@ -323,10 +324,8 @@ def search_for_bs_conf(mutant, mutation, my_params, lower_bound, upper_bound, lo
 
     if is_sts:
         upper_bound = middle_bound
-        upper_accuracy_list = middle_accuracy_list
     else:
         lower_bound = middle_bound
-        lower_accuracy_list = middle_accuracy_list
 
     if abs(upper_bound - lower_bound) <= my_params['precision']:
         if is_sts:
@@ -346,6 +345,6 @@ def search_for_bs_conf(mutant, mutation, my_params, lower_bound, upper_bound, lo
     else:
         print("Changing interval to: [" + str(lower_bound) + ", " + str(upper_bound) + "]")
         return search_for_bs_conf(mutant, mutation, my_params, lower_bound, upper_bound,
-                                  lower_accuracy_list, upper_accuracy_list)
+                                  original_accuracy_list)
 
 
