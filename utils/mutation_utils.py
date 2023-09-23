@@ -26,8 +26,9 @@ import utils.constants as const
 from utils.unparse import Unparser
 from utils.logger_setup import setup_logger
 
-
 logger = setup_logger(__name__)
+
+
 ########################################################################################################################
 ###################################### PREP&FINISH FUNCTIONS ###########################################################
 
@@ -125,7 +126,7 @@ def prepare_model(file_path, save_path_prepared, save_path_trained, mutation_typ
                 #         keywords=[]))
                 #
                 #     node.body.insert(ind + 1, model_save_node)
-                    # break
+                # break
 
                 # if is_specific_call(x, 'evaluate'):
                 #     score_name = x.targets[0].id
@@ -219,12 +220,26 @@ def modify_original_model(model_path):
 
                         imports_inserted = True
 
+                if is_annotated_node(x):
+                    target = x.target.id
+                    annotation = x.annotation.s
+
+                    # print("found an annotation --> " + target + " : " + annotation)
+                    annotations_save_node = ast.Expr(value=ast.Call(
+                        func=ast.Attribute(value=ast.Name(id='mutation_utils', ctx=ast.Load()),
+                                           attr='save_annotated_params',
+                                           ctx=ast.Load()), args=[],
+                        keywords=[ast.keyword(arg=annotation, value=ast.Name(id=target, ctx=ast.Load()))]))
+
+                    node.body.insert(ind + 1, annotations_save_node)
+
                 if is_specific_call(x, 'compile'):
                     model_name = x.value.func.value.id
                     lr_save_node = ast.Expr(value=ast.Call(
-                                func=ast.Attribute(value=ast.Name(id='mutation_utils', ctx=ast.Load()), attr='save_original_model_params',
-                                                   ctx=ast.Load()), args=[ast.Name(id=model_name, ctx=ast.Load()), ],
-                                keywords=[]))
+                        func=ast.Attribute(value=ast.Name(id='mutation_utils', ctx=ast.Load()),
+                                           attr='save_original_model_params',
+                                           ctx=ast.Load()), args=[ast.Name(id=model_name, ctx=ast.Load()), ],
+                        keywords=[]))
                     node.body.insert(ind + 1, lr_save_node)
 
                 if is_specific_call(x, 'fit'):
@@ -249,7 +264,8 @@ def modify_original_model(model_path):
                     #     print("we have a problem here")
 
                     param_save_node = ast.Expr(value=ast.Call(
-                        func=ast.Attribute(value=ast.Name(id='mutation_utils', ctx=ast.Load()), attr='save_original_fit_params',
+                        func=ast.Attribute(value=ast.Name(id='mutation_utils', ctx=ast.Load()),
+                                           attr='save_original_fit_params',
                                            ctx=ast.Load()), args=[], keywords=keywords))
 
                     node.body.insert(ind, param_save_node)
@@ -284,7 +300,8 @@ def save_original_model_params(model):
     else:
         print("model has no layers")
 
-def save_original_fit_params(x = None, epochs = None, batch_size = None):
+
+def save_original_fit_params(x=None, epochs=None, batch_size=None):
     # if x.any():
     if x is not None:
         try:
@@ -298,6 +315,24 @@ def save_original_fit_params(x = None, epochs = None, batch_size = None):
 
     props.model_properties["epochs"] = epochs
     props.model_properties["batch_size"] = batch_size
+
+
+def save_annotated_params(pytorch_training_data=None, learning_rate=None, epochs=None, batch_size=None,
+                          loss_function=None, optim_algorithm=None):
+    if pytorch_training_data is not None:
+        props.model_properties["x_train_len"] = pytorch_training_data.shape[0]
+    if learning_rate is not None:
+        props.model_properties["learning_rate"] = learning_rate
+    if epochs is not None:
+        props.model_properties["epochs"] = epochs
+    if batch_size is not None:
+        props.model_properties["batch_size"] = batch_size
+
+    # the following are not part of the original model_properties dictionary :
+    if loss_function is not None:
+        props.model_properties["loss_function"] = loss_function
+    if optim_algorithm is not None:
+        props.model_properties["optim_algorithm"] = optim_algorithm
 
 
 ########################################################################################################################
@@ -319,6 +354,7 @@ def check_for_annotation(elem, annotation_list):
         if annotation in annotation_list:
             annotation_list.update({annotation: target})
 
+
 def is_annotated_node(elem):
     """Check if the given node is an annotation
 
@@ -332,8 +368,8 @@ def is_annotated_node(elem):
 
     if isinstance(elem, ast.AnnAssign):
         result = True
-
     return result
+
 
 def is_specific_call(elem, call_type):
     """Check if the given element corresponds to a specific method call
@@ -358,6 +394,37 @@ def is_specific_call(elem, call_type):
         is_scall = True
 
     return is_scall
+
+
+def perform_mutation(node, ind, target_variable_name, params):
+    """Performs mutation for the pytorch variables that have a single annotation
+            e.g. batch_size, epochs and learning_rate
+                """
+    for i, x in enumerate(node.body):
+        if ((i == ind)
+                and (isinstance(x, ast.Assign)
+                     and (isinstance(x.targets[0], ast.Name))
+                     and (x.targets[0].id == target_variable_name))):
+            print("The element before AnnAssign that I'll mutate: " + str(x))
+
+            x.value = ast.Call(func=ast.Attribute(value=ast.Name(id=params["module_name"], ctx=ast.Load()),
+                                                  attr=params["operator_name"], ctx=ast.Load()),
+                               args=[x.value, ],
+                               keywords=[])
+
+
+# this method should not be in use anymore, using annotations instead
+def is_pytorch_hyperparameter(elem, hyperparameter):
+    has_pytorch_hyperparameter = False
+
+    if (isinstance(elem, ast.AnnAssign)
+            and isinstance(elem.target, ast.Name)
+            and isinstance(elem.value, ast.Constant)
+            and elem.target.id == hyperparameter):
+        print("found a hyperparameter to change")
+        has_pytorch_hyperparameter = True
+
+    return has_pytorch_hyperparameter
 
 
 def is_training_call(elem):
@@ -491,15 +558,16 @@ def is_optimiser_object(elem):
     keras_optimiser = False
     definition_type = None
 
-    if isinstance(elem, ast.Assign)\
+    if isinstance(elem, ast.Assign) \
             and isinstance(elem.value, ast.Call) \
-            and ((hasattr(elem.value.func, "attr") and elem.value.func.attr in const.keras_optimisers)\
-                or (hasattr(elem.value.func, "id") and elem.value.func.id in const.keras_optimisers))\
+            and ((hasattr(elem.value.func, "attr") and elem.value.func.attr in const.keras_optimisers) \
+                 or (hasattr(elem.value.func, "id") and elem.value.func.id in const.keras_optimisers)) \
             :
         keras_optimiser = True
         definition_type = "object"
 
     return keras_optimiser, definition_type
+
 
 def is_conv_layer_1(elem):
     type = None
@@ -510,16 +578,18 @@ def is_conv_layer_1(elem):
         type = 1
     return type
 
+
 def is_conv_layer_2(elem):
     type = None
     if isinstance(elem, ast.Expr) \
             and isinstance(elem.value, ast.Call) \
-            and hasattr(elem.value, "args") and len(elem.value.args) > 0\
+            and hasattr(elem.value, "args") and len(elem.value.args) > 0 \
             and isinstance(elem.value.args[0], ast.Call) \
             and hasattr(elem.value.args[0].func, "attr") \
             and "Conv" in str(elem.value.args[0].func.attr):
         type = 2
     return type
+
 
 def is_conv_layer_3(elem):
     type = None
@@ -529,6 +599,7 @@ def is_conv_layer_3(elem):
             and "Conv" in str(elem.value.func.id):
         type = 3
     return type
+
 
 def is_conv_layer_4(elem):
     type = None
@@ -540,6 +611,7 @@ def is_conv_layer_4(elem):
             and "Conv" in str(elem.value.args[0].func.id):
         type = 4
     return type
+
 
 def is_conv_layer(elem):
     result = False
@@ -554,6 +626,7 @@ def is_conv_layer(elem):
 
     return result
 
+
 def is_layer_1(elem):
     type = None
     if isinstance(elem, ast.Assign) \
@@ -563,16 +636,18 @@ def is_layer_1(elem):
         type = 1
     return type
 
+
 def is_layer_2(elem):
     type = None
     if isinstance(elem, ast.Expr) \
             and isinstance(elem.value, ast.Call) \
-            and hasattr(elem.value, "args") and len(elem.value.args) > 0\
+            and hasattr(elem.value, "args") and len(elem.value.args) > 0 \
             and isinstance(elem.value.args[0], ast.Call) \
             and hasattr(elem.value.args[0].func, "attr") \
             and str(elem.value.args[0].func.attr):
         type = 2
     return type
+
 
 def is_layer_3(elem):
     type = None
@@ -582,6 +657,7 @@ def is_layer_3(elem):
             and str(elem.value.func.id):
         type = 3
     return type
+
 
 def is_layer_4(elem):
     type = None
@@ -593,6 +669,7 @@ def is_layer_4(elem):
             and str(elem.value.args[0].func.id):
         type = 4
     return type
+
 
 def is_layer(elem):
     result = False
@@ -606,11 +683,6 @@ def is_layer(elem):
         result = True
 
     return result
-
-
-
-
-
 
 
 ####################################################   ####################################################################
@@ -672,6 +744,7 @@ def save_scores(scores, model_name):
         f.write(str(x) + "\n")
     f.close()
 
+
 def save_scores2(scores, mutant_path):
     """ Script that renames the file with trained model
 
@@ -686,11 +759,12 @@ def save_scores2(scores, mutant_path):
     f = open(file_path, "a+")
 
     for ind, score in enumerate(scores):
-        line = str(ind) +  " " + str(score) + "\n"
+        line = str(ind) + " " + str(score) + "\n"
         f.write(line)
     f.close()
 
-def save_scores_csv(scores, file_path, mutation_params = None):
+
+def save_scores_csv(scores, file_path, mutation_params=None):
     """ Script that renames the file with trained model
 
         Keyword arguments:
@@ -702,11 +776,12 @@ def save_scores_csv(scores, file_path, mutation_params = None):
     row_list = []
 
     for ind, score in enumerate(scores):
-        row_list.append([ind+1, score[0], score[1]])
+        row_list.append([ind + 1, score[0], score[1]])
 
     with open(file_path, "w+", newline='') as file:
         writer = csv.writer(file)
         writer.writerows(row_list)
+
 
 def load_scores_from_csv(file_path):
     scores = []
@@ -717,6 +792,7 @@ def load_scores_from_csv(file_path):
                 scores.append((float(row[1]), float(row[2])))
 
     return scores
+
 
 def concat_params_for_file_name(params):
     """ Script that renames the file with trained model
@@ -754,10 +830,11 @@ def update_mutation_properties(mutation, param, new_value):
     for key in keys:
         params[key] = new_value
 
+
 def get_accuracy_list_from_scores(scores):
     scores_len = len(scores)
     accuracy_list = list(range(0, scores_len))
-    for i in range (0, scores_len):
+    for i in range(0, scores_len):
         accuracy_list[i] = scores[i][1]
 
     return accuracy_list

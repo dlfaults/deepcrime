@@ -1,18 +1,30 @@
+from torch import nn
+from torch import optim
 ###
 # Mapping between configuration file that enables mutations and mutation classes
 ###
 mutation_class_map = {
     "Mutation": "Mutation",
     "change_label": "ChangeLabelTDMut",
+    "change_pytorch_label": "ChangePytorchLabel",
     "delete_training_data": "DeleteTDMut",
+    "delete_pytorch_training_data": "DeletePytorchTrainingData",
     "unbalance_train_data": "UnbalanceTDMut",
+    "unbalance_pytorch_training_data": "UnbalancePytorchTrainingData",
     "add_noise": "AddNoiseTDMut",
+    "pytorch_add_noise": "PytorchAddNoise",
     "make_output_classes_overlap": "OutputClassesOverlapTDMUT",
+    "pytorch_make_output_classes_overlap": "PytorchMakeOutputClassesOverlap",
+
     ####
     "change_batch_size": "ChangeBatchSizeHPMut",
+    "change_pytorch_batch_size": "ChangePytorchBatchSize",
     "change_epochs": "ChangeEpochsHPMut",
+    "change_pytorch_epochs": "ChangePytorchEpochs",
     "change_learning_rate": "ChangeLearnRateHPMut",
+    "change_pytorch_learning_rate": "ChangePytorchLearningRate",
     "disable_batching": "DisableBatchingHPMut",
+    "pytorch_disable_batching": "DisablePytorchBatching",
     ####
     "change_activation_function": "ChangeActivationAFMut",
     "remove_activation_function": "RemoveActivationAFMut",
@@ -21,6 +33,7 @@ mutation_class_map = {
     "change_weights_initialisation": "ChangeWeightsInitialisation",
     ####
     "change_optimisation_function": "ChangeOptimisationFunction",
+    "change_pytorch_optimisation_function": "ChangePytorchOptimisationFunction",
     "change_gradient_clip": "ChangeGradientClip",
     ###
     "remove_validation_set": "RemoveValidationSet",
@@ -31,6 +44,7 @@ mutation_class_map = {
     "remove_bias": "RemoveBiasMut",
     ###
     "change_loss_function": "ChangeLossFunction",
+    "change_pytorch_loss_function": "ChangePytorchLossFunction",
     ###
     "change_dropout_rate": "ChangeDropoutRate",
     ###
@@ -87,13 +101,17 @@ activation_functions = [
 operator_mod = "operators"
 operator_lib = ["activation_function_operators",
                 "training_data_operators",
+                "pytorch_training_data_operators",
                 "bias_operators",
                 "weights_operators",
                 "optimiser_operators",
                 "dropout_operators,"
                 "hyperparams_operators",
                 "training_process_operators",
-                "loss_operators"]
+                "loss_operators",
+                "pytorch_loss_operators",
+                "pytorch_optimiser_operators",
+                "pytorch_hyperparams_operators"]
 
 ###
 # Default number of runs
@@ -135,6 +153,14 @@ keras_optimisers = [
     "adamax",
     "nadam"
 ]
+
+pytorch_optimisers = {
+    "SGD": optim.SGD,
+    "ASGD": optim.ASGD,
+    "Adamax": optim.Adamax,
+    "Adagrad": optim.Adagrad,
+    "Adadelta": optim.Adadelta
+}
 
 # Dicts of default parameters
 
@@ -252,6 +278,11 @@ keras_losses = [
     #"cosine_proximity"
 ]
 
+pytorch_losses = {
+    "NLLLoss": nn.NLLLoss(),
+    "CrossEntropyLoss": nn.CrossEntropyLoss(),
+    "MultiMarginLoss": nn.MultiMarginLoss(),
+}
 ###
 # Keras Weight Regularisers
 ###

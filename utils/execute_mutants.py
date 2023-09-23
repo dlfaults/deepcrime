@@ -44,8 +44,13 @@ def execute_mutants(mutants_path, mutations):
         else:
             udp = None
 
-        layer_udp = mutation_params.get("layer_udp", None)
+        print()
+        print("EXECUTING MUTANTS")
+        print("udp is : ", udp)
+        print()
 
+        layer_udp = mutation_params.get("layer_udp", None)
+        # print("layer UDP is : ", layer_udp)
 
         search_type = mutation_params.get("search_type")
 
@@ -72,7 +77,7 @@ def execute_mutants(mutants_path, mutations):
 
 
 def execute_based_on_search(udp, search_type, mutation, mutant, mutation_params, ind = None, mutation_ind = ''):
-
+    # print("now inside execute based on search")
     global scores
 
     try:
@@ -123,7 +128,7 @@ def execute_mutant(mutant_path, mutation_params, mutation_ind = ''):
 
         if not (os.path.isfile(results_file_path)):
             for i in range(mutation_params["runs_number"]):
-
+                # for i in range(1):
                 mutation_final_name = mutant_path[1].replace(".py", "") + "_MP" + params_list + mutation_ind + "_" + str(i) + ".h5"
 
                 score = m1.main(mutation_final_name)
@@ -138,6 +143,7 @@ def execute_mutant(mutant_path, mutation_params, mutation_ind = ''):
             if scores:
                 save_scores_csv(scores, results_file_path, params_list)
         else:
+            print("reading (mutated model) scores from file")
             scores = load_scores_from_csv(results_file_path)
 
     except ImportError as err:
@@ -145,6 +151,8 @@ def execute_mutant(mutant_path, mutation_params, mutation_ind = ''):
     else:
         a = 1
 
+    print("=================executing mutated model done, before return scores========================")
+    print("the scores from executing mutated model: ", scores)
     return scores
 
 def execute_original_model(model_path, results_path):
@@ -155,16 +163,16 @@ def execute_original_model(model_path, results_path):
     transformed_path = modified_model_path.replace(os.path.sep, ".").replace(".py", "")
 
     m1 = importlib.import_module(transformed_path)
-
+    # print(m1)
     csv_file_path = os.path.join(results_path, props.model_name + ".csv")
-
+    # print("csv file path is ", csv_file_path)
     if not(os.path.isfile(csv_file_path)):
         for i in range(const.runs_number_default):
         # for i in range(1):
             path_trained = [os.path.join(os.getcwd(), const.save_paths["trained"]),
                             props.model_name + "_trained.h5",
                             props.model_name + "_original_" + str(i) + ".h5"]
-
+            # print(path_trained[2])
             score = m1.main(path_trained[2])
 
             scores.append(score)
@@ -173,10 +181,13 @@ def execute_original_model(model_path, results_path):
 
         save_scores_csv(scores, csv_file_path)
     else:
-        print("reading scores from file")
+        print("reading (original model) scores from file")
         scores = load_scores_from_csv(csv_file_path)
 
+    print("=================executing original model done, before return scores========================")
+    print("the scores from executing original model: ", scores)
     return scores
+
 
 
 def execute_exhaustive_search(mutant, mutation, my_params, mutation_ind = ''):
@@ -222,6 +233,29 @@ def execute_exhaustive_search(mutant, mutation, my_params, mutation_ind = ''):
                 with open(csv_file, 'a') as f1:
                     writer = csv.writer(f1, delimiter=',', lineterminator='\n', )
                     writer.writerow([str(loss), str(p_value), str(effect_size), str(is_sts)])
+    elif name == 'change_pytorch_loss_function':
+        for loss in const.pytorch_losses:
+            print("Changing into loss:" + loss)
+            update_mutation_properties(mutation, "loss_function_udp", loss)
+            mutation_accuracy_list = get_accuracy_list_from_scores(execute_mutant(mutant, my_params))
+            print()
+            print("original accuracy list : ", original_accuracy_list)
+            print("mutation accuracy list : ", mutation_accuracy_list)
+            is_sts, p_value, effect_size = is_diff_sts(original_accuracy_list, mutation_accuracy_list)
+
+            if len(mutation_accuracy_list) > 0:
+                csv_file = os.path.join(mutant[0], "results", "stats", my_params['name'] + "_exssearch.csv")
+                with open(csv_file, 'a') as f1:
+                    writer = csv.writer(f1, delimiter=',', lineterminator='\n', )
+                    writer.writerow([str(loss), str(p_value), str(effect_size), str(is_sts)])
+
+        print()
+        print("finished for all 3 losses in exhaustive mutation part")
+        print(props.change_pytorch_loss_function["loss_function_udp"])
+        print("changing the udp")
+        props.change_pytorch_loss_function["loss_function_udp"] = None
+        print(props.change_pytorch_loss_function["loss_function_udp"])
+        print()
     elif name == 'change_dropout_rate':
         for dropout in const.dropout_values:
             print("Changing into dropout rate:" + str(dropout))
@@ -246,6 +280,25 @@ def execute_exhaustive_search(mutant, mutation, my_params, mutation_ind = ''):
                 with open(csv_file, 'a') as f1:
                     writer = csv.writer(f1, delimiter=',', lineterminator='\n', )
                     writer.writerow([str(batch_size), str(p_value), str(effect_size), str(is_sts)])
+    elif name == 'change_pytorch_batch_size':
+        for batch_size in const.batch_sizes:
+            print("Changing into batch size:" + str(batch_size))
+            update_mutation_properties(mutation, "batch_size", batch_size)
+            mutation_accuracy_list = get_accuracy_list_from_scores(execute_mutant(mutant, my_params))
+            is_sts, p_value, effect_size = is_diff_sts(original_accuracy_list, mutation_accuracy_list)
+
+            if len(mutation_accuracy_list) > 0:
+                csv_file = os.path.join(mutant[0], "results", "stats", my_params['name'] + "_exssearch.csv")
+                with open(csv_file, 'a') as f1:
+                    writer = csv.writer(f1, delimiter=',', lineterminator='\n', )
+                    writer.writerow([str(batch_size), str(p_value), str(effect_size), str(is_sts)])
+        print()
+        print("finished for all batches in exhaustive mutation part")
+        print(props.change_pytorch_batch_size["change_batch_size_udp"])
+        print("changing the udp")
+        props.change_pytorch_batch_size["change_batch_size_udp"] = None
+        print(props.change_pytorch_batch_size["change_batch_size_udp"])
+        print()
     elif name == 'change_weights_initialisation':
         for initialiser in const.keras_initialisers:
             print("Changing into initialisation:" + str(initialiser))

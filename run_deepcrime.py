@@ -21,9 +21,9 @@ data = {
 
 def run_automate():
 
-    data['subject_name'] = 'mnist'
-    data['subject_path'] = os.path.join('test_models', 'mnist_conv.py')
-    data['mutations'] = ["change_optimisation_function"]
+    data['subject_name'] = 'mnist_pytorch_learning_rate'
+    data['subject_path'] = os.path.join('test_models', 'mnist_pytorch.py')
+    data['mutations'] = ["change_pytorch_learning_rate"]
 
     dc_props.write_properties(data)
 
@@ -35,11 +35,17 @@ def run_automate():
     importlib.reload(props)
     importlib.reload(const)
 
+    print()
+    print()
+    print("====PROPS DICTIONARY BEFOREHAND======")
+    print(props.model_properties)
+    print()
+    print()
     run_deepcrime_tool()
 
     if props.MS == 'DC_MS':
         data['mode'] = 'train'
-        data['subject_path'] = os.path.join('test_models', 'mnist_conv_train.py')
+        data['subject_path'] = os.path.join('test_models', 'mnist_pytorch_train.py')
         dc_props.write_properties(data)
 
         test_results = os.path.join(data['root'], save_paths['mutated'],  data['subject_name'], 'results')
@@ -52,7 +58,13 @@ def run_automate():
         else:
             raise Exception()
 
-
+        # props.model_properties["x_train_len"] = 10000
+        print()
+        print()
+        print("====PROPS DICTIONARY AFTER======")
+        print(props.model_properties)
+        print()
+        print()
         run_deepcrime_tool()
 
         if os.path.isdir(test_results):
