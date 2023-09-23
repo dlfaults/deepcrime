@@ -4,9 +4,10 @@ from copy import deepcopy
 from utils import mutation_utils as mu
 from utils.logger_setup import setup_logger
 import utils.properties as props
-
+import astunparse
 
 logger = setup_logger(__name__)
+
 
 class Mutation():
     applyOnce = True
@@ -79,7 +80,7 @@ class Mutation():
         except Exception:
             logger.error("Mutation.add_keyword adding keyword to AST node failed")
 
-#TODO: Check if we need this method
+    # TODO: Check if we need this method
     def get_mutation_params(self):
         """Extract a dict of params needed for mutation from a params file
 
@@ -141,41 +142,34 @@ class Mutation():
         application_cnt = 0
         model_params_ann = {}
         was_annotated = False
-
         mutation_params = getattr(props, self.mutationName)
 
         for x in mutation_params["annotation_params"]:
             model_params_ann[x] = None
-
+        print("model params ann before is")
+        print(model_params_ann)
         # Look for the right place to insert the mutation
         # Commented is the functionality to apply the same mutation a number of times (Not needed atm)
+
+        # print(astunparse.dump(tree))
+
         for node in ast.walk(tree):
             if hasattr(node, 'body') and isinstance(node.body, list):
                 for ind, x in enumerate(node.body):
-                    # check for annotation
-                    mu.check_for_annotation(x, model_params_ann)
-                    # if all annotations find then insert mutation
-                    if not None in model_params_ann.values() \
-                            and len(model_params_ann) > 0:
-                    #     original_x = deepcopy(node.body[ind])
-                    #
-                        self.apply_mutation(node, x, ind+1, model_params_ann)
+                    if len(model_params_ann) > 0:
+                        mu.check_for_annotation(x, model_params_ann)
+                        #     original_x = deepcopy(node.body[ind])
+                        if not None in model_params_ann.values():
+                            self.apply_mutation(node, x, ind + 1, model_params_ann)
 
-                        ast.fix_missing_locations(tree)
-                        save_path_mutated_cnt = save_path_mutated + str(application_cnt) + '.py'
-                        mu.unparse_tree(tree, save_path_mutated_cnt)
+                            ast.fix_missing_locations(tree)
+                            save_path_mutated_cnt = save_path_mutated + str(application_cnt) + '.py'
+                            mu.unparse_tree(tree, save_path_mutated_cnt)
 
-                        was_annotated = True
-
-                        break
-                    #     if self.applyOnce:
-                    #         break
-                    #     else:
-                    #         application_cnt += 1
-                    #         node.body[ind] = original_x
-            if not None in model_params_ann.values():
-                break
-
+                            was_annotated = True
+        print("after walking through tree, models_params_ann is: ")
+        print(model_params_ann)
+        print("was annotated? :" + str(was_annotated))
         return was_annotated
 
     def mutate_automatically(self, tree, save_path_mutated):
@@ -207,7 +201,7 @@ class Mutation():
                             application_cnt += 1
                             node.body[ind] = original_x
 
-    def apply_mutation(self, node, elem, ind, model_params = None):
+    def apply_mutation(self, node, elem, ind, model_params):
         # Each class has its own implementation
         return None
 
@@ -256,7 +250,7 @@ class ChangeLabelTDMut(Mutation):
 
         return params
 
-    def generate_mutation_node(self, elem, model_params_ann = None):
+    def generate_mutation_node(self, elem, model_params_ann=None):
         """Generate a mutation node
 
             Keyword arguments:
@@ -277,26 +271,26 @@ class ChangeLabelTDMut(Mutation):
         # print(mutation_params)
 
         mutation_node = ast.Assign(targets=[
-                                            # ast.Name(id=model_params["y_train"], ctx=ast.Store()),
-                                            model_params["y_train"],
-                                            ],
-                                   value=ast.Call(
-                                       func=ast.Attribute(
-                                           value=ast.Name(id=mutation_params["module_name"], ctx=ast.Load()),
-                                           attr=mutation_params["operator_name"],
-                                           ctx=ast.Load()),
-                                       args=[
-                                             # ast.Name(id=model_params["y_train"], ctx=ast.Load()),
-                                             # ast.Str(s=mutation_params["label"]),
-                                             # ast.Num(n=mutation_params["percentage"]), ],
-                                             model_params["y_train"],
-                                             ast.Name(id=mutation_params["label"], ctx=ast.Load()),
-                                             ast.Name(id=mutation_params["percentage"], ctx=ast.Load()),],
-                                       keywords=[]))
+            # ast.Name(id=model_params["y_train"], ctx=ast.Store()),
+            model_params["y_train"],
+        ],
+            value=ast.Call(
+                func=ast.Attribute(
+                    value=ast.Name(id=mutation_params["module_name"], ctx=ast.Load()),
+                    attr=mutation_params["operator_name"],
+                    ctx=ast.Load()),
+                args=[
+                    # ast.Name(id=model_params["y_train"], ctx=ast.Load()),
+                    # ast.Str(s=mutation_params["label"]),
+                    # ast.Num(n=mutation_params["percentage"]), ],
+                    model_params["y_train"],
+                    ast.Name(id=mutation_params["label"], ctx=ast.Load()),
+                    ast.Name(id=mutation_params["percentage"], ctx=ast.Load()), ],
+                keywords=[]))
 
         return mutation_node
 
-    def insert_mutation(self, node, elem, ind, model_params_ann = None):
+    def insert_mutation(self, node, elem, ind, model_params_ann=None):
         # generate a mutation call
         mutation_node = self.generate_mutation_node(elem, model_params_ann)
         # insert a mutation call
@@ -304,7 +298,41 @@ class ChangeLabelTDMut(Mutation):
         is_inserted = True
         return None
 
-    def apply_mutation(self, node, elem, ind, model_params_ann = None):
+    def apply_mutation(self, node, elem, ind, model_params_ann=None):
+        self.insert_mutation(node, elem, ind, model_params_ann)
+
+
+class ChangePytorchLabel(Mutation):
+    mutationName = "change_pytorch_label"
+
+    def dummy(self):
+        print("Mutation Initialised")
+
+    def is_target_node(self, elem):
+        # TODO: complete implementation here
+        return None
+
+    def get_model_params(self, elem):
+        # TODO: complete implementation here
+        return None
+
+    def get_mutation_params(self):
+        # TODO: complete implementation here
+        params = {}
+        params["module_name"] = "pytorch_training_data_operators"
+        params["operator_name"] = "operator_change_labels"
+
+        return params
+
+    def generate_mutation_node(self, elem, model_params_ann=None):
+        # TODO: complete implementation here
+        return None
+
+    def insert_mutation(self, node, elem, ind, model_params_ann=None):
+        # TODO: complete implementation here
+        return None
+
+    def apply_mutation(self, node, elem, ind, model_params_ann=None):
         self.insert_mutation(node, elem, ind, model_params_ann)
 
 
@@ -341,7 +369,7 @@ class DeleteTDMut(Mutation):
 
         return params
 
-    def generate_mutation_node(self, elem, model_params_ann = None):
+    def generate_mutation_node(self, elem, model_params_ann=None):
         """Generate a mutation node
 
             Keyword arguments:
@@ -363,26 +391,26 @@ class DeleteTDMut(Mutation):
         mutation_params = self.get_mutation_params()
 
         mutation_node = ast.Assign(targets=[ast.Tuple(elts=[
-        #         ast.Name(id=model_params["x_train"], ctx=ast.Store()),
-        #         ast.Name(id=model_params["y_train"], ctx=ast.Store()),
-                model_params["x_train"],
-                model_params["y_train"],
-            ], ctx=ast.Store()),
-            ],
-                value=ast.Call(
-                    func=ast.Attribute(value=ast.Name(id=mutation_params["module_name"], ctx=ast.Load()),
-                                       attr=mutation_params["operator_name"],
-                                       ctx=ast.Load()),
-                    args=[
-                          # ast.Name(id=model_params["x_train"], ctx=ast.Load()),
-                          # ast.Name(id=model_params["y_train"], ctx=ast.Load()),
-                          model_params["x_train"],
-                          model_params["y_train"],
-                          ast.Name(id=mutation_params["percentage"], ctx=ast.Load()), ],
-                    keywords=[]))
+            #         ast.Name(id=model_params["x_train"], ctx=ast.Store()),
+            #         ast.Name(id=model_params["y_train"], ctx=ast.Store()),
+            model_params["x_train"],
+            model_params["y_train"],
+        ], ctx=ast.Store()),
+        ],
+            value=ast.Call(
+                func=ast.Attribute(value=ast.Name(id=mutation_params["module_name"], ctx=ast.Load()),
+                                   attr=mutation_params["operator_name"],
+                                   ctx=ast.Load()),
+                args=[
+                    # ast.Name(id=model_params["x_train"], ctx=ast.Load()),
+                    # ast.Name(id=model_params["y_train"], ctx=ast.Load()),
+                    model_params["x_train"],
+                    model_params["y_train"],
+                    ast.Name(id=mutation_params["percentage"], ctx=ast.Load()), ],
+                keywords=[]))
         return mutation_node
 
-    def insert_mutation(self, node, elem, ind, model_params_ann = None):
+    def insert_mutation(self, node, elem, ind, model_params_ann=None):
         # generate a mutation call
         mutation_node = self.generate_mutation_node(elem, model_params_ann)
 
@@ -391,8 +419,43 @@ class DeleteTDMut(Mutation):
         is_inserted = True
         return None
 
-    def apply_mutation(self, node, elem, ind, model_params_ann = None):
+    def apply_mutation(self, node, elem, ind, model_params_ann=None):
         self.insert_mutation(node, elem, ind, model_params_ann)
+
+
+class DeletePytorchTrainingData(Mutation):
+    mutationName = "delete_pytorch_training_data"
+
+    def dummy(self):
+        print("Mutation Initialised")
+
+    def is_target_node(self, elem):
+        # TODO: complete implementation here
+        return None
+
+    def get_model_params(self, elem):
+        # TODO: complete implementation here
+        return None
+
+    def get_mutation_params(self):
+        # TODO: complete implementation here
+        params = {}
+        params["module_name"] = "pytorch_training_data_operators"
+        params["operator_name"] = "operator_delete_training_data"
+
+        return params
+
+    def generate_mutation_node(self, elem, model_params_ann=None):
+        # TODO: complete implementation here
+        return None
+
+    def insert_mutation(self, node, elem, ind, model_params_ann=None):
+        # TODO: complete implementation here
+        return None
+
+    def apply_mutation(self, node, elem, ind, model_params_ann=None):
+        self.insert_mutation(node, elem, ind, model_params_ann)
+
 
 class OutputClassesOverlapTDMUT(Mutation):
     mutationName = "make_output_classes_overlap"
@@ -460,16 +523,16 @@ class OutputClassesOverlapTDMUT(Mutation):
                                    attr=mutation_params["operator_name"],
                                    ctx=ast.Load()),
                 args=[
-                      # ast.Name(id=model_params["x_train"], ctx=ast.Load()),
-                      # ast.Name(id=model_params["y_train"], ctx=ast.Load()),
-                      model_params["x_train"],
-                      model_params["y_train"],
-                      ast.Name(id=mutation_params["percentage"], ctx=ast.Load()), ],
+                    # ast.Name(id=model_params["x_train"], ctx=ast.Load()),
+                    # ast.Name(id=model_params["y_train"], ctx=ast.Load()),
+                    model_params["x_train"],
+                    model_params["y_train"],
+                    ast.Name(id=mutation_params["percentage"], ctx=ast.Load()), ],
                 keywords=[]))
 
         return mutation_node
 
-    def insert_mutation(self, node, elem, ind, model_params_ann = None):
+    def insert_mutation(self, node, elem, ind, model_params_ann=None):
         # generate a mutation call
         mutation_node = self.generate_mutation_node(elem, model_params_ann)
         # insert a mutation call
@@ -477,8 +540,43 @@ class OutputClassesOverlapTDMUT(Mutation):
         is_inserted = True
         return None
 
-    def apply_mutation(self, node, elem, ind, model_params_ann = None):
+    def apply_mutation(self, node, elem, ind, model_params_ann=None):
         self.insert_mutation(node, elem, ind, model_params_ann)
+
+
+class PytorchMakeOutputClassesOverlap(Mutation):
+    mutationName = "pytorch_make_output_classes_overlap"
+
+    def dummy(self):
+        print("Mutation Initialised")
+
+    def is_target_node(self, elem):
+        # TODO: complete implementation here
+        return None
+
+    def get_model_params(self, elem):
+        # TODO: complete implementation here
+        return None
+
+    def get_mutation_params(self):
+        # TODO: complete implementation here
+        params = {}
+        params["module_name"] = "pytorch_training_data_operators"
+        params["operator_name"] = "operator_make_output_classes_overlap"
+
+        return params
+
+    def generate_mutation_node(self, elem, model_params_ann=None):
+        # TODO: complete implementation here
+        return None
+
+    def insert_mutation(self, node, elem, ind, model_params_ann=None):
+        # TODO: complete implementation here
+        return None
+
+    def apply_mutation(self, node, elem, ind, model_params_ann=None):
+        self.insert_mutation(node, elem, ind, model_params_ann)
+
 
 class UnbalanceTDMut(Mutation):
     mutationName = "unbalance_train_data"
@@ -513,7 +611,7 @@ class UnbalanceTDMut(Mutation):
 
         return params
 
-    def generate_mutation_node(self, elem, model_params_ann = None):
+    def generate_mutation_node(self, elem, model_params_ann=None):
         """Generate a mutation node
 
             Keyword arguments:
@@ -535,27 +633,27 @@ class UnbalanceTDMut(Mutation):
         mutation_params = self.get_mutation_params()
 
         mutation_node = ast.Assign(targets=[ast.Tuple(elts=[
-                # ast.Name(id=model_params["x_train"], ctx=ast.Store()),
-                # ast.Name(id=model_params["y_train"], ctx=ast.Store()),
-                model_params["x_train"],
-                model_params["y_train"],
-            ], ctx=ast.Store()),
-            ],
-                value=ast.Call(
-                    func=ast.Attribute(value=ast.Name(id=mutation_params["module_name"], ctx=ast.Load()),
-                                       attr=mutation_params["operator_name"],
-                                       ctx=ast.Load()),
-                    args=[
-                          # ast.Name(id=model_params["x_train"], ctx=ast.Load()),
-                          # ast.Name(id=model_params["y_train"], ctx=ast.Load()),
-                          model_params["x_train"],
-                          model_params["y_train"],
-                          ast.Name(id=mutation_params["percentage"], ctx=ast.Load()), ],
-                    keywords=[]))
+            # ast.Name(id=model_params["x_train"], ctx=ast.Store()),
+            # ast.Name(id=model_params["y_train"], ctx=ast.Store()),
+            model_params["x_train"],
+            model_params["y_train"],
+        ], ctx=ast.Store()),
+        ],
+            value=ast.Call(
+                func=ast.Attribute(value=ast.Name(id=mutation_params["module_name"], ctx=ast.Load()),
+                                   attr=mutation_params["operator_name"],
+                                   ctx=ast.Load()),
+                args=[
+                    # ast.Name(id=model_params["x_train"], ctx=ast.Load()),
+                    # ast.Name(id=model_params["y_train"], ctx=ast.Load()),
+                    model_params["x_train"],
+                    model_params["y_train"],
+                    ast.Name(id=mutation_params["percentage"], ctx=ast.Load()), ],
+                keywords=[]))
 
         return mutation_node
 
-    def insert_mutation(self, node, elem, ind, model_params_ann = None):
+    def insert_mutation(self, node, elem, ind, model_params_ann=None):
         # generate a mutation call
         mutation_node = self.generate_mutation_node(elem, model_params_ann)
         # insert a mutation call
@@ -563,7 +661,41 @@ class UnbalanceTDMut(Mutation):
         is_inserted = True
         return None
 
-    def apply_mutation(self, node, elem, ind, model_params_ann = None):
+    def apply_mutation(self, node, elem, ind, model_params_ann=None):
+        self.insert_mutation(node, elem, ind, model_params_ann)
+
+
+class UnbalancePytorchTrainingData(Mutation):
+    mutationName = "unbalance_pytorch_training_data"
+
+    def dummy(self):
+        print("Mutation Initialised")
+
+    def is_target_node(self, elem):
+        # TODO: complete implementation here
+        return None
+
+    def get_model_params(self, elem):
+        # TODO: complete implementation here
+        return None
+
+    def get_mutation_params(self):
+        # TODO: complete implementation here
+        params = {}
+        params["module_name"] = "pytorch_training_data_operators"
+        params["operator_name"] = "unbalance_training_data"
+
+        return params
+
+    def generate_mutation_node(self, elem, model_params_ann=None):
+        # TODO: complete implementation here
+        return None
+
+    def insert_mutation(self, node, elem, ind, model_params_ann=None):
+        # TODO: complete implementation here
+        return None
+
+    def apply_mutation(self, node, elem, ind, model_params_ann=None):
         self.insert_mutation(node, elem, ind, model_params_ann)
 
 
@@ -600,7 +732,7 @@ class AddNoiseTDMut(Mutation):
 
         return params
 
-    def generate_mutation_node(self, elem, model_params_ann = None):
+    def generate_mutation_node(self, elem, model_params_ann=None):
         """Generate a mutation node
 
             Keyword arguments:
@@ -621,23 +753,23 @@ class AddNoiseTDMut(Mutation):
         mutation_params = self.get_mutation_params()
 
         mutation_node = ast.Assign(targets=[
-                                        # ast.Name(id=model_params["x_train"], ctx=ast.Store()),
-                                            model_params["x_train"],
-                                            ],
-                                       value=ast.Call(
-                                           func=ast.Attribute(
-                                               value=ast.Name(id=mutation_params["module_name"], ctx=ast.Load()),
-                                               attr=mutation_params["operator_name"],
-                                               ctx=ast.Load()),
-                                           args=[
-                                                 # ast.Name(id=model_params["x_train"], ctx=ast.Load()),
-                                                 model_params["x_train"],
-                                                 ast.Name(id=mutation_params["percentage"], ctx=ast.Load()), ],
-                                           keywords=[]))
+            # ast.Name(id=model_params["x_train"], ctx=ast.Store()),
+            model_params["x_train"],
+        ],
+            value=ast.Call(
+                func=ast.Attribute(
+                    value=ast.Name(id=mutation_params["module_name"], ctx=ast.Load()),
+                    attr=mutation_params["operator_name"],
+                    ctx=ast.Load()),
+                args=[
+                    # ast.Name(id=model_params["x_train"], ctx=ast.Load()),
+                    model_params["x_train"],
+                    ast.Name(id=mutation_params["percentage"], ctx=ast.Load()), ],
+                keywords=[]))
 
         return mutation_node
 
-    def insert_mutation(self, node, elem, ind, model_params_ann = None):
+    def insert_mutation(self, node, elem, ind, model_params_ann=None):
         # generate a mutation call
         mutation_node = self.generate_mutation_node(elem, model_params_ann)
         # insert a mutation call
@@ -645,7 +777,41 @@ class AddNoiseTDMut(Mutation):
         is_inserted = True
         return None
 
-    def apply_mutation(self, node, elem, ind, model_params_ann = None):
+    def apply_mutation(self, node, elem, ind, model_params_ann=None):
+        self.insert_mutation(node, elem, ind, model_params_ann)
+
+
+class PytorchAddNoise(Mutation):
+    mutationName = "pytorch_add_noise"
+
+    def dummy(self):
+        print("Mutation Initialised")
+
+    def is_target_node(self, elem):
+        # TODO: complete implementation here
+        return None
+
+    def get_model_params(self, elem):
+        # TODO: complete implementation here
+        return None
+
+    def get_mutation_params(self):
+        # TODO: complete implementation here
+        params = {}
+        params["module_name"] = "pytorch_training_data_operators"
+        params["operator_name"] = "operator_add_noise_to_training_data"
+
+        return params
+
+    def generate_mutation_node(self, elem, model_params_ann=None):
+        # TODO: complete implementation here
+        return None
+
+    def insert_mutation(self, node, elem, ind, model_params_ann=None):
+        # TODO: complete implementation here
+        return None
+
+    def apply_mutation(self, node, elem, ind, model_params_ann=None):
         self.insert_mutation(node, elem, ind, model_params_ann)
 
 
@@ -665,7 +831,7 @@ class ChangeLearnRateHPMut(Mutation):
         params = {}
         return params
 
-    def get_mutation_params(self, optimiser_name = None):
+    def get_mutation_params(self, optimiser_name=None):
         """Extract a dict of params needed for mutation from a params file
 
             Keyword arguments:
@@ -687,17 +853,55 @@ class ChangeLearnRateHPMut(Mutation):
         for keyword in elem.value.keywords:
             if keyword.arg == "optimizer":
                 keyword.value = ast.Call(func=ast.Attribute(value=ast.Name(id=params["module_name"], ctx=ast.Load()),
-                                    attr=params["operator_name"], ctx=ast.Load()),
-                                    args=[keyword.value,],
-                                    keywords=[])
+                                                            attr=params["operator_name"], ctx=ast.Load()),
+                                         args=[keyword.value, ],
+                                         keywords=[])
 
-    def apply_mutation(self, node, elem, ind, model_params = None):
+    def apply_mutation(self, node, elem, ind, model_params=None):
         self.perform_mutation(elem)
+
+
+class ChangePytorchLearningRate(Mutation):
+    mutationName = "change_pytorch_learning_rate"
+
+    def dummy(self):
+        print("Mutation Initialised")
+
+    def is_target_node(self, elem):
+        print("=======THIS TARGET NODE SHOULD NOT BE ACCESSED=======")
+        print("(because mutate_annotated() should only be called, not mutate_automatially()")
+        return mu.is_pytorch_hyperparameter(elem, "learning_rate")
+
+    def get_model_params(self, elem):
+        params = {}
+        return params
+
+    def get_mutation_params(self, optimiser_name=None):
+        """Extract a dict of params needed for mutation from a params file
+
+            Keyword arguments:
+            mutation_name -- name of the mutation
+
+            Returns: dics (params)
+        """
+
+        params = {}
+
+        params["module_name"] = "pytorch_hyperparams_operators"
+        params["operator_name"] = "operator_change_pytorch_learning_rate"
+
+        return params
+
+    def apply_mutation(self, node, elem, ind, model_params_ann):
+        target_name = model_params_ann.get("learning_rate")
+        params = self.get_mutation_params()
+        mu.perform_mutation(node, ind - 2, target_name, params)
+
 
 class ChangeBatchSizeHPMut(Mutation):
     mutationName = "change_batch_size"
 
-    def dummy(self):#__init__
+    def dummy(self):  # __init__
         print("Mutation Initialised")
 
     def is_target_node(self, elem):
@@ -733,8 +937,8 @@ class ChangeBatchSizeHPMut(Mutation):
         """
 
         mutation_node = ast.Assign(targets=[
-                ast.Name(id=model_params["batch_size"], ctx=ast.Store()), ],
-                value=ast.Subscript(
+            ast.Name(id=model_params["batch_size"], ctx=ast.Store()), ],
+            value=ast.Subscript(
                 value=ast.Attribute(value=ast.Name(id='properties', ctx=ast.Load()), attr='change_batch_size',
                                     ctx=ast.Load()),
                 slice=ast.Index(value=ast.Str(s='batch_size')), ctx=ast.Load()))
@@ -754,7 +958,7 @@ class ChangeBatchSizeHPMut(Mutation):
             if keyword.arg == "batch_size":
                 keyword.value = ast.Name(id="properties.change_batch_size['batch_size']", ctx=ast.Load())
 
-    def apply_mutation(self, node, elem, ind, model_params = None):
+    def apply_mutation(self, node, elem, ind, model_params=None):
         # Get model.fit specific params
         model_params = self.get_model_params(elem)
 
@@ -770,6 +974,43 @@ class ChangeBatchSizeHPMut(Mutation):
             self.perform_mutation(elem)
         else:
             print("Unknown batch size value")
+
+
+class ChangePytorchBatchSize(Mutation):
+    mutationName = "change_pytorch_batch_size"
+
+    def dummy(self):
+        print("Mutation Initialised")
+
+    def is_target_node(self, elem):
+        print("=======THIS TARGET NODE SHOULD NOT BE ACCESSED=======")
+        print("(because mutate_annotated() should only be called, not mutate_automatially()")
+        return mu.is_pytorch_hyperparameter(elem, "batch_size")
+
+    def get_model_params(self, elem):
+        params = {}
+        return params
+
+    def get_mutation_params(self, optimiser_name=None):
+        """Extract a dict of params needed for mutation from a params file
+
+            Keyword arguments:
+            mutation_name -- name of the mutation
+
+            Returns: dics (params)
+        """
+
+        params = {}
+
+        params["module_name"] = "pytorch_hyperparams_operators"
+        params["operator_name"] = "operator_change_pytorch_batch_size"
+
+        return params
+
+    def apply_mutation(self, node, elem, ind, model_params_ann):
+        target_name = model_params_ann.get("batch_size")
+        params = self.get_mutation_params()
+        mu.perform_mutation(node, ind - 2, target_name, params)
 
 
 class ChangeEpochsHPMut(Mutation):
@@ -800,13 +1041,12 @@ class ChangeEpochsHPMut(Mutation):
 
         return params
 
-
     def perform_mutation(self, elem):
         for keyword in elem.value.keywords:
             if keyword.arg == "epochs":
                 keyword.value = ast.Name(id="properties.change_epochs['pct']", ctx=ast.Load())
 
-    def apply_mutation(self, node, elem, ind, model_params = None):
+    def apply_mutation(self, node, elem, ind, model_params=None):
         # Get model.fit specific params
         model_params = self.get_model_params(elem)
 
@@ -816,6 +1056,43 @@ class ChangeEpochsHPMut(Mutation):
             self.add_keyword(elem, "epochs", "properties.change_epochs['pct']")
         else:
             self.perform_mutation(elem)
+
+
+class ChangePytorchEpochs(Mutation):
+    mutationName = "change_pytorch_epochs"
+
+    def dummy(self):
+        print("Mutation Initialised")
+
+    def is_target_node(self, elem):
+        print("=======THIS TARGET NODE SHOULD NOT BE ACCESSED=======")
+        print("(because mutate_annotated() should only be called, not mutate_automatially()")
+        return mu.is_pytorch_hyperparameter(elem, "epochs")
+
+    def get_model_params(self, elem):
+        params = {}
+        return params
+
+    def get_mutation_params(self, optimiser_name=None):
+        """Extract a dict of params needed for mutation from a params file
+
+            Keyword arguments:
+            mutation_name -- name of the mutation
+
+            Returns: dics (params)
+        """
+
+        params = {}
+
+        params["module_name"] = "pytorch_hyperparams_operators"
+        params["operator_name"] = " operator_change_pytorch_epochs"
+
+        return params
+
+    def apply_mutation(self, node, elem, ind, model_params_ann):
+        target_name = model_params_ann.get("epochs")
+        params = self.get_mutation_params()
+        mu.perform_mutation(node, ind - 2, target_name, params)
 
 
 class DisableBatchingHPMut(Mutation):
@@ -851,6 +1128,42 @@ class DisableBatchingHPMut(Mutation):
             self.perform_mutation(elem)
 
 
+class DisablePytorchBatching(Mutation):
+    mutationName = "pytorch_disable_batching"
+
+    def dummy(self):
+        print("Mutation Initialised")
+
+    def is_target_node(self, elem):
+        print("=======THIS TARGET NODE SHOULD NOT BE ACCESSED=======")
+        print("(because mutate_annotated() should only be called, not mutate_automatially()")
+        return False
+
+    def get_mutation_params(self, optimiser_name=None):
+        """Extract a dict of params needed for mutation from a params file
+
+            Keyword arguments:
+            mutation_name -- name of the mutation
+
+            Returns: dics (params)
+        """
+
+        params = {}
+
+        params["module_name"] = "pytorch_hyperparams_operators"
+        params["operator_name"] = "operator_disable_pytorch_batching"
+
+        return params
+
+    def apply_mutation(self, node, elem, ind, model_params_ann):
+        if not props.disable_batching["applicable"]:
+            print("Disable data batching size in not applicable")
+        else:
+            target_name = model_params_ann.get("batch_size")
+            params = self.get_mutation_params()
+            mu.perform_mutation(node, ind - 2, target_name, params)
+
+
 #########################################
 ###########   Activation Function  ############
 
@@ -869,7 +1182,7 @@ class ChangeActivationAFMut(Mutation):
         params = {}
 
         if isinstance(elem.value.func, ast.Attribute) \
-            and hasattr(elem.value.func.value, 'id'):
+                and hasattr(elem.value.func.value, 'id'):
             params["model_name"] = elem.value.func.value.id
         else:
             print("log, we have a problem")
@@ -892,7 +1205,7 @@ class ChangeActivationAFMut(Mutation):
 
         return params
 
-    def generate_mutation_node(self, elem, model_params_ann = None):
+    def generate_mutation_node(self, elem, model_params_ann=None):
         """Generate a mutation node
 
             Keyword arguments:
@@ -916,7 +1229,7 @@ class ChangeActivationAFMut(Mutation):
                                        keywords=[]))
         return mutation_node
 
-    def insert_mutation(self, node, elem, ind, model_params_ann = None):
+    def insert_mutation(self, node, elem, ind, model_params_ann=None):
 
         mutation_node = self.generate_mutation_node(elem, model_params_ann)
 
@@ -925,8 +1238,9 @@ class ChangeActivationAFMut(Mutation):
         is_inserted = True
         return None
 
-    def apply_mutation(self, node, elem, ind, model_params = None):
+    def apply_mutation(self, node, elem, ind, model_params=None):
         self.insert_mutation(node, elem, ind)
+
 
 class RemoveActivationAFMut(Mutation):
     mutationName = "remove_activation_function"
@@ -943,7 +1257,7 @@ class RemoveActivationAFMut(Mutation):
         params = {}
 
         if isinstance(elem.value.func, ast.Attribute) \
-            and hasattr(elem.value.func.value, 'id'):
+                and hasattr(elem.value.func.value, 'id'):
             params["model_name"] = elem.value.func.value.id
         else:
             print("log, we have a problem")
@@ -966,7 +1280,7 @@ class RemoveActivationAFMut(Mutation):
 
         return params
 
-    def generate_mutation_node(self, elem, model_params_ann = None):
+    def generate_mutation_node(self, elem, model_params_ann=None):
         """Generate a mutation node
 
             Keyword arguments:
@@ -990,7 +1304,7 @@ class RemoveActivationAFMut(Mutation):
                                        keywords=[]))
         return mutation_node
 
-    def insert_mutation(self, node, elem, ind, model_params_ann = None):
+    def insert_mutation(self, node, elem, ind, model_params_ann=None):
 
         mutation_node = self.generate_mutation_node(elem, model_params_ann)
 
@@ -999,8 +1313,9 @@ class RemoveActivationAFMut(Mutation):
         is_inserted = True
         return None
 
-    def apply_mutation(self, node, elem, ind, model_params = None):
+    def apply_mutation(self, node, elem, ind, model_params=None):
         self.insert_mutation(node, elem, ind)
+
 
 class AddActivationAFMut(Mutation):
     mutationName = "add_activation_function"
@@ -1015,7 +1330,7 @@ class AddActivationAFMut(Mutation):
         params = {}
 
         if isinstance(elem.value.func, ast.Attribute) \
-            and hasattr(elem.value.func.value, 'id'):
+                and hasattr(elem.value.func.value, 'id'):
             params["model_name"] = elem.value.func.value.id
         else:
             print("log, we have a problem")
@@ -1038,7 +1353,7 @@ class AddActivationAFMut(Mutation):
 
         return params
 
-    def generate_mutation_node(self, elem, model_params_ann = None):
+    def generate_mutation_node(self, elem, model_params_ann=None):
         """Generate a mutation node
 
             Keyword arguments:
@@ -1062,7 +1377,7 @@ class AddActivationAFMut(Mutation):
                                        keywords=[]))
         return mutation_node
 
-    def insert_mutation(self, node, elem, ind, model_params_ann = None):
+    def insert_mutation(self, node, elem, ind, model_params_ann=None):
 
         mutation_node = self.generate_mutation_node(elem, model_params_ann)
 
@@ -1071,7 +1386,7 @@ class AddActivationAFMut(Mutation):
         is_inserted = True
         return None
 
-    def apply_mutation(self, node, elem, ind, model_params = None):
+    def apply_mutation(self, node, elem, ind, model_params=None):
         self.insert_mutation(node, elem, ind)
 
 
@@ -1091,7 +1406,7 @@ class ChangeOptimisationFunction(Mutation):
         params = {}
         return params
 
-    def get_mutation_params(self, optimiser_name = None):
+    def get_mutation_params(self, optimiser_name=None):
         """Extract a dict of params needed for mutation from a params file
 
             Keyword arguments:
@@ -1113,12 +1428,49 @@ class ChangeOptimisationFunction(Mutation):
         for keyword in elem.value.keywords:
             if keyword.arg == "optimizer":
                 keyword.value = ast.Call(func=ast.Attribute(value=ast.Name(id=params["module_name"], ctx=ast.Load()),
-                                    attr=params["operator_name"], ctx=ast.Load()),
-                                    args=[keyword.value,],
-                                    keywords=[])
+                                                            attr=params["operator_name"], ctx=ast.Load()),
+                                         args=[keyword.value, ],
+                                         keywords=[])
 
-    def apply_mutation(self, node, elem, ind, model_params = None):
+    def apply_mutation(self, node, elem, ind, model_params=None):
         self.perform_mutation(elem)
+
+
+class ChangePytorchOptimisationFunction(Mutation):
+    mutationName = "change_pytorch_optimisation_function"
+
+    def dummy(self):
+        print("Mutation Initialised")
+
+    def is_target_node(self, elem):
+        print("=======THIS TARGET NODE SHOULD NOT BE ACCESSED=======")
+        print("(because mutate_annotated() should only be called, not mutate_automatially()")
+        return False
+
+    def get_model_params(self, elem):
+        params = {}
+        return params
+
+    def get_mutation_params(self, optimiser_name=None):
+        """Extract a dict of params needed for mutation from a params file
+
+            Keyword arguments:
+            mutation_name -- name of the mutation
+
+            Returns: dics (params)
+        """
+
+        params = {}
+
+        params["module_name"] = "pytorch_optimiser_operators"
+        params["operator_name"] = "operator_change_pytorch_optimiser"
+
+        return params
+
+    def apply_mutation(self, node, elem, ind, model_params_ann):
+        target_name = model_params_ann.get("optim_algorithm")
+        params = self.get_mutation_params()
+        mu.perform_mutation(node, ind - 2, target_name, params)
 
 
 class ChangeGradientClip(Mutation):
@@ -1136,7 +1488,7 @@ class ChangeGradientClip(Mutation):
         params = {}
         return params
 
-    def get_mutation_params(self, optimiser_name = None):
+    def get_mutation_params(self, optimiser_name=None):
         """Extract a dict of params needed for mutation from a params file
 
             Keyword arguments:
@@ -1159,7 +1511,7 @@ class ChangeGradientClip(Mutation):
             # TODO: add errrror
             print("we have a problem here")
 
-    def apply_mutation(self, node, elem, ind, model_params = None):
+    def apply_mutation(self, node, elem, ind, model_params=None):
         self.perform_mutation(elem)
 
 
@@ -1240,13 +1592,12 @@ class ChangeEarlyStoppingPatience(Mutation):
         for keyword in elem.value.keywords:
             if keyword.arg == "callbacks":
                 keyword.value = ast.Call(func=ast.Attribute(value=ast.Name(id=params["module_name"], ctx=ast.Load()),
-                                         attr=params["operator_name"], ctx=ast.Load()),
+                                                            attr=params["operator_name"], ctx=ast.Load()),
                                          args=[keyword.value, ],
                                          keywords=[])
 
-    def apply_mutation(self, node, elem, ind, model_params = None):
+    def apply_mutation(self, node, elem, ind, model_params=None):
         self.perform_mutation(elem)
-
 
 
 #########################################
@@ -1265,7 +1616,7 @@ class AddBiasMut(Mutation):
         params = {}
 
         if isinstance(elem.value.func, ast.Attribute) \
-            and hasattr(elem.value.func.value, 'id'):
+                and hasattr(elem.value.func.value, 'id'):
             params["model_name"] = elem.value.func.value.id
         else:
             print("log, we have a problem")
@@ -1288,7 +1639,7 @@ class AddBiasMut(Mutation):
 
         return params
 
-    def generate_mutation_node(self, elem, model_params_ann = None):
+    def generate_mutation_node(self, elem, model_params_ann=None):
         """Generate a mutation node
 
             Keyword arguments:
@@ -1312,7 +1663,7 @@ class AddBiasMut(Mutation):
                                        keywords=[]))
         return mutation_node
 
-    def insert_mutation(self, node, elem, ind, model_params_ann = None):
+    def insert_mutation(self, node, elem, ind, model_params_ann=None):
 
         mutation_node = self.generate_mutation_node(elem, model_params_ann)
 
@@ -1321,7 +1672,7 @@ class AddBiasMut(Mutation):
         is_inserted = True
         return None
 
-    def apply_mutation(self, node, elem, ind, model_params = None):
+    def apply_mutation(self, node, elem, ind, model_params=None):
         self.insert_mutation(node, elem, ind)
 
 
@@ -1338,7 +1689,7 @@ class RemoveBiasMut(Mutation):
         params = {}
 
         if isinstance(elem.value.func, ast.Attribute) \
-            and hasattr(elem.value.func.value, 'id'):
+                and hasattr(elem.value.func.value, 'id'):
             params["model_name"] = elem.value.func.value.id
         else:
             print("log, we have a problem")
@@ -1361,7 +1712,7 @@ class RemoveBiasMut(Mutation):
 
         return params
 
-    def generate_mutation_node(self, elem, model_params_ann = None):
+    def generate_mutation_node(self, elem, model_params_ann=None):
         """Generate a mutation node
 
             Keyword arguments:
@@ -1385,7 +1736,7 @@ class RemoveBiasMut(Mutation):
                                        keywords=[]))
         return mutation_node
 
-    def insert_mutation(self, node, elem, ind, model_params_ann = None):
+    def insert_mutation(self, node, elem, ind, model_params_ann=None):
 
         mutation_node = self.generate_mutation_node(elem, model_params_ann)
 
@@ -1394,7 +1745,7 @@ class RemoveBiasMut(Mutation):
         is_inserted = True
         return None
 
-    def apply_mutation(self, node, elem, ind, model_params = None):
+    def apply_mutation(self, node, elem, ind, model_params=None):
         self.insert_mutation(node, elem, ind)
 
 
@@ -1414,7 +1765,7 @@ class ChangeLossFunction(Mutation):
         params = {}
         return params
 
-    def get_mutation_params(self, optimiser_name = None):
+    def get_mutation_params(self, optimiser_name=None):
         """Extract a dict of params needed for mutation from a params file
 
             Keyword arguments:
@@ -1436,16 +1787,53 @@ class ChangeLossFunction(Mutation):
         for keyword in elem.value.keywords:
             if keyword.arg == "loss":
                 keyword.value = ast.Call(func=ast.Attribute(value=ast.Name(id=params["module_name"], ctx=ast.Load()),
-                                    attr=params["operator_name"], ctx=ast.Load()),
-                                    args=[keyword.value,],
-                                    keywords=[])
+                                                            attr=params["operator_name"], ctx=ast.Load()),
+                                         args=[keyword.value, ],
+                                         keywords=[])
 
-    def apply_mutation(self, node, elem, ind, model_params = None):
+    def apply_mutation(self, node, elem, ind, model_params=None):
         self.perform_mutation(elem)
+
+
+class ChangePytorchLossFunction(Mutation):
+    mutationName = "change_pytorch_loss_function"
+
+    def dummy(self):
+        print("Mutation Initialised")
+
+    def is_target_node(self, elem):
+        print("=======THIS TARGET NODE SHOULD NOT BE ACCESSED=======")
+        print("(because mutate_annotated() should only be called, not mutate_automatially()")
+        return False
+
+    def get_model_params(self, elem):
+        params = {}
+        return params
+
+    def get_mutation_params(self, optimiser_name=None):
+        """Extract a dict of params needed for mutation from a params file
+
+            Keyword arguments:
+            mutation_name -- name of the mutation
+
+            Returns: dics (params)
+        """
+
+        params = {}
+
+        params["module_name"] = "pytorch_loss_operators"
+        params["operator_name"] = "operator_change_pytorch_loss_function"
+
+        return params
+
+    def apply_mutation(self, node, elem, ind, model_params_ann):
+        target_name = model_params_ann.get("loss_function")
+        params = self.get_mutation_params()
+        mu.perform_mutation(node, ind - 2, target_name, params)
+
 
 #########################################
 ###########   Dropout  #################
-
 class ChangeDropoutRate(Mutation):
     mutationName = "change_dropout_rate"
 
@@ -1459,7 +1847,7 @@ class ChangeDropoutRate(Mutation):
         params = {}
 
         if isinstance(elem.value.func, ast.Attribute) \
-            and hasattr(elem.value.func.value, 'id'):
+                and hasattr(elem.value.func.value, 'id'):
             params["model_name"] = elem.value.func.value.id
         else:
             print("log, we have a problem")
@@ -1482,7 +1870,7 @@ class ChangeDropoutRate(Mutation):
 
         return params
 
-    def generate_mutation_node(self, elem, model_params_ann = None):
+    def generate_mutation_node(self, elem, model_params_ann=None):
         """Generate a mutation node
 
             Keyword arguments:
@@ -1506,7 +1894,7 @@ class ChangeDropoutRate(Mutation):
                                        keywords=[]))
         return mutation_node
 
-    def insert_mutation(self, node, elem, ind, model_params_ann = None):
+    def insert_mutation(self, node, elem, ind, model_params_ann=None):
 
         mutation_node = self.generate_mutation_node(elem, model_params_ann)
 
@@ -1515,7 +1903,7 @@ class ChangeDropoutRate(Mutation):
         is_inserted = True
         return None
 
-    def apply_mutation(self, node, elem, ind, model_params = None):
+    def apply_mutation(self, node, elem, ind, model_params=None):
         self.insert_mutation(node, elem, ind)
 
 
@@ -1537,7 +1925,7 @@ class ChangeWeightsInitialisation(Mutation):
         params = {}
 
         if isinstance(elem.value.func, ast.Attribute) \
-            and hasattr(elem.value.func.value, 'id'):
+                and hasattr(elem.value.func.value, 'id'):
             params["model_name"] = elem.value.func.value.id
         else:
             print("log, we have a problem")
@@ -1560,7 +1948,7 @@ class ChangeWeightsInitialisation(Mutation):
 
         return params
 
-    def generate_mutation_node(self, elem, model_params_ann = None):
+    def generate_mutation_node(self, elem, model_params_ann=None):
         """Generate a mutation node
 
             Keyword arguments:
@@ -1584,7 +1972,7 @@ class ChangeWeightsInitialisation(Mutation):
                                        keywords=[]))
         return mutation_node
 
-    def insert_mutation(self, node, elem, ind, model_params_ann = None):
+    def insert_mutation(self, node, elem, ind, model_params_ann=None):
 
         mutation_node = self.generate_mutation_node(elem, model_params_ann)
 
@@ -1593,7 +1981,7 @@ class ChangeWeightsInitialisation(Mutation):
         is_inserted = True
         return None
 
-    def apply_mutation(self, node, elem, ind, model_params = None):
+    def apply_mutation(self, node, elem, ind, model_params=None):
         self.insert_mutation(node, elem, ind)
 
 
@@ -1612,7 +2000,7 @@ class ChangeWeightsRegularisation(Mutation):
         params = {}
 
         if isinstance(elem.value.func, ast.Attribute) \
-            and hasattr(elem.value.func.value, 'id'):
+                and hasattr(elem.value.func.value, 'id'):
             params["model_name"] = elem.value.func.value.id
         else:
             print("log, we have a problem")
@@ -1635,7 +2023,7 @@ class ChangeWeightsRegularisation(Mutation):
 
         return params
 
-    def generate_mutation_node(self, elem, model_params_ann = None):
+    def generate_mutation_node(self, elem, model_params_ann=None):
         """Generate a mutation node
 
             Keyword arguments:
@@ -1659,7 +2047,7 @@ class ChangeWeightsRegularisation(Mutation):
                                        keywords=[]))
         return mutation_node
 
-    def insert_mutation(self, node, elem, ind, model_params_ann = None):
+    def insert_mutation(self, node, elem, ind, model_params_ann=None):
 
         mutation_node = self.generate_mutation_node(elem, model_params_ann)
 
@@ -1668,7 +2056,7 @@ class ChangeWeightsRegularisation(Mutation):
         is_inserted = True
         return None
 
-    def apply_mutation(self, node, elem, ind, model_params = None):
+    def apply_mutation(self, node, elem, ind, model_params=None):
         self.insert_mutation(node, elem, ind)
 
 
@@ -1687,7 +2075,7 @@ class RemoveWeightsRegularisation(Mutation):
         params = {}
 
         if isinstance(elem.value.func, ast.Attribute) \
-            and hasattr(elem.value.func.value, 'id'):
+                and hasattr(elem.value.func.value, 'id'):
             params["model_name"] = elem.value.func.value.id
         else:
             print("log, we have a problem")
@@ -1710,7 +2098,7 @@ class RemoveWeightsRegularisation(Mutation):
 
         return params
 
-    def generate_mutation_node(self, elem, model_params_ann = None):
+    def generate_mutation_node(self, elem, model_params_ann=None):
         """Generate a mutation node
 
             Keyword arguments:
@@ -1734,7 +2122,7 @@ class RemoveWeightsRegularisation(Mutation):
                                        keywords=[]))
         return mutation_node
 
-    def insert_mutation(self, node, elem, ind, model_params_ann = None):
+    def insert_mutation(self, node, elem, ind, model_params_ann=None):
 
         mutation_node = self.generate_mutation_node(elem, model_params_ann)
 
@@ -1743,7 +2131,7 @@ class RemoveWeightsRegularisation(Mutation):
         is_inserted = True
         return None
 
-    def apply_mutation(self, node, elem, ind, model_params = None):
+    def apply_mutation(self, node, elem, ind, model_params=None):
         self.insert_mutation(node, elem, ind)
 
 
@@ -1760,7 +2148,7 @@ class AddWeightsRegularisation(Mutation):
         params = {}
 
         if isinstance(elem.value.func, ast.Attribute) \
-            and hasattr(elem.value.func.value, 'id'):
+                and hasattr(elem.value.func.value, 'id'):
             params["model_name"] = elem.value.func.value.id
         else:
             print("log, we have a problem")
@@ -1783,7 +2171,7 @@ class AddWeightsRegularisation(Mutation):
 
         return params
 
-    def generate_mutation_node(self, elem, model_params_ann = None):
+    def generate_mutation_node(self, elem, model_params_ann=None):
         """Generate a mutation node
 
             Keyword arguments:
@@ -1807,7 +2195,7 @@ class AddWeightsRegularisation(Mutation):
                                        keywords=[]))
         return mutation_node
 
-    def insert_mutation(self, node, elem, ind, model_params_ann = None):
+    def insert_mutation(self, node, elem, ind, model_params_ann=None):
 
         mutation_node = self.generate_mutation_node(elem, model_params_ann)
 
@@ -1816,5 +2204,5 @@ class AddWeightsRegularisation(Mutation):
         is_inserted = True
         return None
 
-    def apply_mutation(self, node, elem, ind, model_params = None):
+    def apply_mutation(self, node, elem, ind, model_params=None):
         self.insert_mutation(node, elem, ind)

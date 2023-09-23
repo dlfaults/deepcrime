@@ -37,6 +37,10 @@ change_label = {
 # change_label_pct = -1
 # change_label_label = None
 
+change_pytorch_label = {
+    # TODO: fill in here
+}
+
 # Mutation Delete Training Data
 delete_training_data = {
     "name": 'delete_td',
@@ -53,6 +57,10 @@ delete_training_data = {
 # delete_train_data_udp = False
 # delete_train_data_pct = -1
 
+delete_pytorch_training_data = {
+    # TODO: fill in here
+}
+
 # Unbalance Training Data
 unbalance_train_data = {
     "name": 'unbalance_td',
@@ -67,6 +75,10 @@ unbalance_train_data = {
     "bs_rounding_type": 'float'
 }
 
+unbalance_pytorch_training_data = {
+    # TODO: fill in here
+}
+
 make_output_classes_overlap = {
     "name": 'output_classes_overlap',
     "make_output_classes_overlap_udp": False,
@@ -78,6 +90,10 @@ make_output_classes_overlap = {
     "precision": 5,
     "search_type": 'binary',
     "bs_rounding_type": 'float'
+}
+
+pytorch_make_output_classes_overlap = {
+    # TODO: fill in here
 }
 
 # Add Noise to Training Data
@@ -94,6 +110,10 @@ add_noise = {
      "bs_rounding_type": 'float'
 }
 
+pytorch_add_noise = {
+    # TODO: fill in here
+}
+
 change_epochs = {
     "name": 'change_epochs',
     "change_epochs_size": False,
@@ -107,12 +127,35 @@ change_epochs = {
     "runs_number": 10,
 }
 
+change_pytorch_epochs = {
+    "name": 'change_pytorch_epochs',
+    "change_epochs_size": False,
+    "pct": 12,
+    "bs_lower_bound": 12,
+    "bs_upper_bound": 1,
+    "bs_rounding_type": 'int',
+    "annotation_params": ["epochs"],
+    "search_type": 'binary',
+    "precision": 1,
+    "runs_number": 10,
+}
+
 change_batch_size = {
     "name": 'change_batch_size',
     "runs_number": 10,
     "change_batch_size_udp": False,
     "batch_size": -1,
     "annotation_params": [],
+    "search_type": 'exhaustive',
+    "applicable": True
+}
+
+change_pytorch_batch_size = {
+    "name": 'change_pytorch_batch_size',
+    "runs_number": 10,
+    "change_batch_size_udp": False,
+    "batch_size": -1,
+    "annotation_params": ["batch_size"],
     "search_type": 'exhaustive',
     "applicable": True
 }
@@ -130,10 +173,32 @@ change_learning_rate = {
     "bs_rounding_type": 'float3'
 }
 
+change_pytorch_learning_rate = {
+    "name": 'change_pytorch_learning_rate',
+    "learning_rate_udp": False,
+    "pct": -1,
+    "bs_lower_bound": 1.0,
+    "bs_upper_bound": 0.001,
+    "annotation_params": ["learning_rate"],
+    "search_type": 'binary',
+    "runs_number": 10,
+    "precision": 0.01,
+    "bs_rounding_type": 'float3'
+}
+
 disable_batching = {
     "name": 'disable_batching',
     "train_size": 60000,
     "annotation_params": [],
+    "search_type": None,
+    "runs_number": 10,
+    "applicable": True
+}
+
+pytorch_disable_batching = {
+    "name": 'pytorch_disable_batching',
+    "train_size": 60000,
+    "annotation_params": ["batch_size"],
     "search_type": None,
     "runs_number": 10,
     "applicable": True
@@ -195,6 +260,16 @@ change_optimisation_function = {
     "name": 'change_optimisation_function',
 }
 
+change_pytorch_optimisation_function = {
+    "optimisation_function_udp": "Adagrad",
+    "annotation_params": ["optim_algorithm"],
+    "mutation_target": None,
+    "runs_number": 10,
+    "layer_mutation": False,
+    "search_type": None,
+    "name": 'change_pytorch_optimisation_function',
+}
+
 remove_validation_set = {
     "name": 'remove_validation_set',
     "runs_number": 10,
@@ -241,6 +316,16 @@ change_loss_function = {
     "loss_function_udp": None,
     "runs_number": 10,
     "annotation_params": [],
+    "mutation_target": None,
+    "search_type": 'exhaustive',
+    "layer_mutation": False
+}
+
+change_pytorch_loss_function = {
+    "name": 'change_pytorch_loss_function',
+    "loss_function_udp": None,
+    "runs_number": 10,
+    "annotation_params": ["loss_function"],
     "mutation_target": None,
     "search_type": 'exhaustive',
     "layer_mutation": False
